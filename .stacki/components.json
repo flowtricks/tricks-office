@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "components": {
+    "src/components/Button.astro": {
+      "props": {},
+      "text": "Button Text"
+    },
+    "src/components/global/NavLink.astro": {
+      "props": {},
+      "text": "Text"
+    },
+    "src/components/interactive/Slider.astro": {
+      "props": {
+        "small": 1.4
+      },
+      "children": [
+        {
+          "component": "src/components/item/Card.astro"
+        },
+        {
+          "component": "src/components/item/Card.astro"
+        }
+      ]
+    },
+    "src/components/interactive/TabLink.astro": {
+      "props": {},
+      "text": "Text"
+    },
+    "src/components/item/Card.astro": {
+      "props": {
+        "heading": "Lorem ipsum dolor sit amet elit",
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+      }
+    },
+    "src/components/typography/Eyebrow.astro": {
+      "props": {},
+      "text": "Text"
+    },
+    "src/components/typography/Heading.astro": {
+      "props": {},
+      "text": "Lorem ipsum dolor sit amet elit"
+    },
+    "src/components/typography/Paragraph.astro": {
+      "props": {},
+      "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+    },
+    "src/components/wrapper/ButtonWrapper.astro": {
+      "props": {},
+      "children": [
+        {
+          "component": "src/components/Button.astro"
+        }
+      ]
+    },
+    "src/components/wrapper/ContentWrapper.astro": {
+      "props": {},
+      "children": [
+        {
+          "component": "src/components/typography/Heading.astro"
+        },
+        {
+          "component": "src/components/typography/Paragraph.astro"
+        },
+        {
+          "component": "src/components/wrapper/ButtonWrapper.astro"
+        }
+      ]
+    },
+    "src/components/wrapper/Grid.astro": {
+      "props": {
+        "small": 2,
+        "medium": 3
+      },
+      "children": [
+        {
+          "component": "src/components/item/Card.astro"
+        },
+        {
+          "component": "src/components/item/Card.astro"
+        },
+        {
+          "component": "src/components/item/Card.astro"
+        }
+      ]
+    },
+    "src/layouts/BaseLayout.astro": {
+      "props": {}
+    },
+    "src/components/wrapper/Section.astro": {
+      "props": {}
+    }
+  }
+}

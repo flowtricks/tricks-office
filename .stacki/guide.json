@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "settings": {
+    "visible": false,
+    "columns": {
+      "kind": "automatic"
+    },
+    "color": "rgb(146, 146, 146)",
+    "opacity": 0.06,
+    "numbers": true,
+    "columnDefaultsVersion": 1
+  }
+}
