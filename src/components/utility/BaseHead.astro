@@ -38,12 +38,39 @@ const socialImage = new URL(image, Astro.site);
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={socialImage} />
+<meta
+  property="og:image:alt"
+  content="Timothy's 3D character in his warmly lit office, with plants, shelves, and a standing desk."
+/>
+{
+  image === "/og-image.jpg" && (
+    <>
+      <>
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+      </>
+    </>
+  )
+}
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={pageTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={socialImage} />
+<meta
+  name="twitter:image:alt"
+  content="Timothy's 3D character in his warmly lit office."
+/>
 
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link
+  rel="apple-touch-icon"
+  sizes="180x180"
+  href="/icons/apple-touch-icon.png"
+/>
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#090909" />
+<meta name="apple-mobile-web-app-title" content="T.RICKS Office" />
 <meta name="generator" content={Astro.generator} />

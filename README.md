@@ -34,3 +34,13 @@ Built on [Lumos for Astro](https://lumosframework.com).
 Framework and code licensing is documented in [LICENSE](LICENSE).
 Third-party models retain their respective licenses and attributions in
 `public/models/*.LICENSE.txt`; those assets are not relicensed by the code license.
+
+## Deployment
+
+The site runs on Cloudflare Workers at https://office.timothyricks.com.
+`wrangler.jsonc` pins the TRICKS account and custom domain. Authenticate with
+`npx wrangler login`, then run `npm run deploy` to build and publish.
+
+The favicon and app icons are transparent renders of the actual character.
+The social image is a clean render of the office without the interface. During
+local development, open `/?export-branding` for the source render controls.

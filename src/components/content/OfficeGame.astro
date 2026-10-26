@@ -2645,6 +2645,10 @@ const { render = true } = Astro.props;
     );
     await renderer.compileAsync(scene, camera);
     if (disposed) return;
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has("export-branding")) {
+      const { addBrandingExports } = await import("../../../scripts/export-office-branding");
+      addBrandingExports(scene, camera, renderer, composer);
+    }
     setLoadingProgress(100, "Welcome in.");
     frame = requestAnimationFrame(animate);
     const reveal = loading.animate([{ opacity: 1 }, { opacity: 0 }], { duration: reduced.matches ? 0 : 400, easing: "ease-out" });

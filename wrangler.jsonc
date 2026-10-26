@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tricks-office",
+  "account_id": "648e0db8c17f31ba7b1a086995a66c8c",
+  "compatibility_date": "2026-10-26",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+  },
+  "routes": [{ "pattern": "office.timothyricks.com", "custom_domain": true }],
+}

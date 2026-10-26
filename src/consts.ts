@@ -4,7 +4,7 @@ export const SITE_NAME = "T.RICKS Office";
 export const SITE_DESCRIPTION =
   "A quiet corner of the internet. Walk around a warm, handcrafted 3D office and enjoy the little things.";
 /** Canonical origin. Resolves canonical URLs, social images, and the sitemap. */
-export const SITE_URL = "https://preview.lumosframework.com";
+export const SITE_URL = "https://office.timothyricks.com";
 /** BCP 47 locale tag used to format dates and numbers. */
 export const SITE_LOCALE = "en-US";
 /** Routes excluded from search and the sitemap. Surrounding slashes are ignored. */

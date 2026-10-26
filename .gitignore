@@ -33,3 +33,8 @@ scripts/*.blend
 scripts/*.blend1
 scripts/assets/*-source.glb
 scripts/assets/*.step
+
+# Cloudflare local state and credentials
+.wrangler/
+.dev.vars
+.dev.vars.*
