@@ -1,45 +1,36 @@
-<p align="center">
-  <img src=".github/assets/banner.png" alt="Lumos For Astro" width="720">
-</p>
+# T.RICKS Office
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/create-lumos"><img alt="npm version" src="https://img.shields.io/npm/v/create-lumos?labelColor=1E1E1E&color=C6FB50"></a>
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/npm/l/create-lumos?labelColor=1E1E1E&color=C6FB50"></a>
-  <a href="https://github.com/lumosframework/lumos-for-astro/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/lumosframework/lumos-for-astro/actions/workflows/ci.yml/badge.svg"></a>
-</p>
+An interactive 3D office built with Astro, Three.js, and Lumos for Astro.
+Walk around, sit at the desk, inspect shelf objects, adjust the standing desk,
+and ask the Echo Dot to switch the room lights on or off.
 
-A component and styling framework for building Astro sites, designed around
-efficiency, scalability and accessibility.
+## Development
 
-Documentation lives at **[lumosframework.com](https://lumosframework.com)**.
-
-## Getting started
+Requires Node.js 22.23.4 or newer.
 
 ```sh
-npm create lumos@latest my-site
+npm ci
+npm run dev -- --background
 ```
 
-That scaffolds a new site from this repository and installs its dependencies
-with whichever package manager you ran it with. Then:
+Use `npx astro dev status`, `npx astro dev logs`, and `npx astro dev stop`
+to manage the background server.
 
 ```sh
-cd my-site
-npm run dev
+npm run check
+npm run build
+npm run preview
 ```
 
-| Script            | What it does                      |
-| ----------------- | --------------------------------- |
-| `npm run dev`     | Starts the dev server             |
-| `npm run build`   | Builds the site to `dist/`        |
-| `npm run preview` | Serves the built site             |
-| `npm run check`   | Type-checks every `.astro` file   |
-| `npm run format`  | Formats the project with Prettier |
+The main scene is in `src/components/content/OfficeGame.astro`. Scene behavior
+lives in `src/scripts/`, and runtime models and textures are in `public/`.
+The `scripts/check-*.mjs` scripts verify character motion and scene behavior.
+Model preparation scripts require their original source assets and, in some
+cases, Blender; those local source files are not required to run the site.
 
-## Documentation
+## Credits and licensing
 
-Component reference, styling guides and examples are at
-[lumosframework.com](https://lumosframework.com).
-
-## License
-
-[MIT](LICENSE)
+Built on [Lumos for Astro](https://lumosframework.com).
+Framework and code licensing is documented in [LICENSE](LICENSE).
+Third-party models retain their respective licenses and attributions in
+`public/models/*.LICENSE.txt`; those assets are not relicensed by the code license.

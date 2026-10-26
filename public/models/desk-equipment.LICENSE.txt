@@ -1,0 +1,22 @@
+MacBook Pro 14-inch M5
+Author: Apple User — https://sketchfab.com/apple-user
+Source: https://sketchfab.com/3d-models/macbook-pro-14-inch-m5-652a992f4f244122ae251f9cbb81da1e
+License: Sketchfab Standard (as recorded in the supplied GLB)
+https://sketchfab.com/licenses
+Supplied by the user from Desktop on 2026-10-26.
+Changes: mesh simplification, texture optimization, meshopt compression,
+and placement/scaling for the office scene. Original attribution is also
+preserved in the GLB asset metadata.
+
+Elgato Wave Mic Arm LP
+Custom geometry in src/scripts/desk-equipment.ts, based on the manufacturer's
+product photographs and dimension drawing. This is not a downloaded or
+official manufacturer model.
+References:
+https://www.elgato.com/us/en/p/wave-mic-arm-lp
+https://help.elgato.com/hc/en-us/articles/4404864561421-Wave-Mic-Arm-LP-Specifications
+Brand names identify the real-world equipment being depicted.
+
+Shure SM7B recreation: original procedural geometry, based on manufacturer dimensions
+and appearance at https://www.shure.com/en-US/docs/guide/SM7B .
+This is a custom recreation, not a downloaded Shure or Sketchfab asset.

@@ -1,0 +1,2653 @@
+---
+import logoUrl from "@/assets/logo/logo.svg?url";
+
+type Props = {
+  /** Set to `false` to omit the component. */
+  render?: boolean;
+};
+const { render = true } = Astro.props;
+---
+
+{
+  render && (
+    <section
+      class="office-game_wrap"
+      aria-label="The little office game"
+      data-office
+    >
+      <div
+        class="office-game_view"
+        data-view
+        tabindex="0"
+        role="application"
+        aria-label="Office. Use WASD or arrow keys to walk, Shift to run. Walk up to the desk to sit; press a direction again to stand up. Drag the character to pick him up and release to drop him. Drag the background to rotate the view."
+        aria-describedby="office-controls"
+      />
+      <header class="office-game_header">
+        <a class="office-game_brand" href="/" aria-label="T.Ricks home">
+          <img
+            class="office-game_logo"
+            src={logoUrl}
+            alt="T.Ricks"
+            width="1460"
+            height="337"
+          />
+        </a>
+        <div class="office-game_tools">
+          <button
+            class="office-game_icon office-game_sound"
+            data-sound
+            aria-label="Turn sound on"
+            aria-pressed="false"
+            title="Toggle sound"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <>
+                <path d="M11 4 5 9H2v6h3l6 5V4Z" />
+                <path data-sound-off d="m17 9 5 6m0-6-5 6" />
+                <path
+                  data-sound-on
+                  d="M15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14"
+                  style="display:none"
+                />
+              </>
+            </svg>
+          </button>
+          <div
+            class="office-game_views"
+            data-views="close"
+            role="group"
+            aria-label="Camera view"
+          >
+            <button
+              class="office-game_icon office-game_view-button"
+              data-camera="wide"
+              aria-label="Zoomed out view"
+              aria-pressed="false"
+              title="Zoomed out view"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M3 9V3h6m6 0h6v6m0 6v6h-6m-6 0H3v-6" />
+              </svg>
+            </button>
+            <button
+              class="office-game_icon office-game_view-button"
+              data-camera="close"
+              aria-label="Zoomed in view"
+              aria-pressed="true"
+              title="Zoomed in view"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M3 9h6V3m6 0v6h6m0 6h-6v6m-6 0v-6H3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+      <div class="office-game_loading" data-loading role="status">
+        <div class="office-game_loading-content">
+          <h2 class="office-game_loading-title">Welcome to my office.</h2>
+          <div class="office-game_loading-progress" role="progressbar" aria-label="Loading the office" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-load-progress><span data-load-bar /></div>
+          <div class="office-game_loading-meta"><span data-load-label>Setting the scene…</span><span data-load-percent aria-hidden="true">0%</span></div>
+        </div>
+      </div>
+      <div class="office-game_speech" data-speech data-visible="false" aria-hidden="true">
+        <span class="office-game_speech-size" data-speech-size />
+        <span class="office-game_speech-letters" data-speech-letters />
+      </div>
+      <span class="sr-only" data-speech-status role="status" aria-live="polite" />
+      <button class="sr-only" data-echo-command>Ask Alex to turn the lights off</button>
+      <div class="office-game_touch" data-joystick aria-label="Drag to walk">
+        <span data-thumb />
+      </div>
+      <footer class="office-game_footer">
+        <div class="office-game_controls" id="office-controls">
+          <>
+            <span class="office-game_keys">
+              <>
+                <kbd>W</kbd>
+                <span>
+                  <>
+                    <kbd>A</kbd>
+                    <kbd>S</kbd>
+                    <kbd>D</kbd>
+                  </>
+                </span>
+              </>
+            </span>
+            <span>
+              Move around
+              <span class="office-game_secondary">Arrow keys also work</span>
+            </span>
+          </>
+        </div>
+      </footer>
+      <span class="sr-only" data-desk-status role="status" />
+      <div class="office-game_pause" data-pause hidden>
+        <>
+          <p>Paused</p>
+          <button data-resume>
+            Back to the office <span>↗</span>
+          </button>
+        </>
+      </div>
+      <noscript>
+        <p class="office-game_loading">
+          Enable JavaScript to explore the office.
+        </p>
+      </noscript>
+    </section>
+  )
+}
+
+<style is:global>
+  @layer components {
+    .office-game_wrap {
+      --office-ink: #f5f5f5;
+      --office-muted: #a3a3a3;
+      --office-panel: #202020;
+      position: relative;
+      width: 100%;
+      height: 100svh;
+      min-height: 36rem;
+      overflow: hidden;
+      background: #090909;
+      color: var(--office-ink);
+      font-family: var(--primary-family);
+      isolation: isolate;
+    }
+    .office-game_view {
+      position: absolute;
+      inset: 0;
+      outline: none;
+      touch-action: none;
+      cursor: grab;
+    }
+    .office-game_view:active {
+      cursor: grabbing;
+    }
+    .office-game_view canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .office-game_wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 8rem #0003;
+      z-index: 1;
+    }
+    .office-game_header {
+      position: absolute;
+      top: 0;
+      inset-inline: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.5rem;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .office-game_brand {
+      display: block;
+      flex-shrink: 0;
+      text-decoration: none;
+      pointer-events: auto;
+    }
+    .office-game_logo {
+      display: block;
+      width: 5.4rem;
+      height: auto;
+    }
+    .office-game_tools {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: auto;
+    }
+    .office-game_icon {
+      color: #bfbfbf;
+      width: 2.4rem;
+      height: 2.4rem;
+      border: 0;
+      border-radius: 0.7rem;
+      background: transparent;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition:
+        color 160ms,
+        background 160ms;
+    }
+    .office-game_icon:hover {
+      color: #fff;
+    }
+    .office-game_icon[aria-pressed="true"] {
+      color: #fff;
+    }
+    .office-game_icon svg {
+      width: 1rem;
+      height: 1rem;
+    }
+    .office-game_sound {
+      width: 2.8rem;
+      height: 2.8rem;
+      border-radius: 0.9rem;
+      background: var(--office-panel);
+    }
+    .office-game_sound:hover {
+      background: #303030;
+    }
+    .office-game_views {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      padding: 0.2rem;
+      border-radius: 0.9rem;
+      background: var(--office-panel);
+      isolation: isolate;
+    }
+    .office-game_views::before {
+      content: "";
+      position: absolute;
+      top: 0.2rem;
+      left: 0.2rem;
+      width: calc((100% - 0.4rem) / 2);
+      height: calc(100% - 0.4rem);
+      border-radius: 0.7rem;
+      background: #3a3a3a;
+      transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+      z-index: -1;
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
+    }
+    .office-game_views[data-views="close"]::before {
+      transform: translateX(100%);
+    }
+    .office-game_footer {
+      position: absolute;
+      bottom: 0;
+      inset-inline: 0;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      padding: 1.5rem;
+      gap: 1rem;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .office-game_controls {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.75rem 1rem;
+      background: var(--office-panel);
+      border: 0;
+      border-radius: 1rem;
+      backdrop-filter: blur(1rem);
+      font-size: 0.65rem;
+      color: var(--office-ink);
+    }
+    .office-game_secondary {
+      display: block;
+      font-size: 0.55rem;
+      color: var(--office-muted);
+      margin-top: 0.2rem;
+    }
+    .office-game_keys {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+    }
+    .office-game_keys > span {
+      display: flex;
+      gap: 0.15rem;
+    }
+    .office-game_wrap kbd {
+      font-family: inherit;
+      display: inline-grid;
+      place-items: center;
+      border: 0;
+      border-radius: 0.3rem;
+      min-width: 1.15rem;
+      height: 1.15rem;
+      padding: 0 0.25rem;
+      font-size: 0.5rem;
+      color: #d4d4d4;
+      background: #2a2a2a;
+    }
+    .office-game_speech {
+      position: absolute;
+      z-index: 4;
+      pointer-events: none;
+      padding: .95rem 1.35rem;
+      border-radius: 1.35rem;
+      background: linear-gradient(155deg, #fff, #f0f2f5);
+      color: #262a31;
+      font-size: clamp(.9rem, 2.3vw, 1.05rem);
+      line-height: 1.45;
+      font-weight: 500;
+      letter-spacing: -.025em;
+      white-space: nowrap;
+      box-shadow: 0 .2rem .5rem #0000000d, 0 .8rem 2rem #00000024, inset 0 .0625rem 0 #fff;
+      transform-origin: 50% 100%;
+      transform: translate(-50%, calc(-100% + .5rem)) scale(.94);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .22s ease, transform .22s ease, visibility 0s linear .22s;
+    }
+    .office-game_speech[data-visible="true"] {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, -100%) scale(1);
+      transition: opacity .25s ease, transform .38s cubic-bezier(.16, 1, .3, 1), visibility 0s;
+    }
+    .office-game_speech::after {
+      content: "";
+      position: absolute;
+      bottom: -.36rem;
+      left: calc(50% - .4rem);
+      width: .8rem;
+      height: .8rem;
+      background: #f0f2f5;
+      border-radius: 0 0 .2rem 0;
+      transform: rotate(45deg);
+    }
+    .office-game_speech-size { visibility: hidden; }
+    .office-game_speech-letters { position: absolute; inset: .95rem 1.35rem; }
+    .office-game_speech[data-typing="true"] .office-game_speech-letters::after {
+      content: "";
+      display: inline-block;
+      width: .1rem;
+      height: .9em;
+      margin-left: .15rem;
+      border-radius: .1rem;
+      background: #9ba2ad;
+      vertical-align: -.08em;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .office-game_speech, .office-game_speech[data-visible="true"] { transition: none; transform: translate(-50%, -100%); }
+    }
+    .office-game_loading {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background: radial-gradient(ellipse at 50% 45%, #202020, #0b0b0b 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      color: #b2b2b2;
+      text-align: left;
+      font-size: .8rem;
+    }
+    .office-game_loading-content {
+      width: min(100%, 25rem);
+      padding: clamp(1.75rem, 6vw, 2.75rem);
+      border-radius: 2rem;
+      background: linear-gradient(145deg, #222, #161616);
+      box-shadow: 0 1.5rem 5rem #0005;
+    }
+    .office-game_loading-title { color: #fafafa; max-width: 12ch; font-size: clamp(1.9rem, 6vw, 2.55rem); font-weight: 500; letter-spacing: -.055em; line-height: 1.08; margin: 0 0 2.5rem; }
+    .office-game_loading-progress { height: .3rem; background: #ffffff10; overflow: hidden; border-radius: 1rem; }
+    .office-game_loading-progress span { display: block; height: 100%; width: 100%; background: #eee; border-radius: inherit; transform: scaleX(0); transform-origin: left; transition: transform .45s ease; }
+    .office-game_loading-meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: .8rem; color: #b6b6b6; font-size: .65rem; font-variant-numeric: tabular-nums; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .office-game_loading-progress span { transition: none; }
+    }
+    .office-game_touch {
+      display: none;
+    }
+    .office-game_pause {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      background: #0a0a0ac9;
+      backdrop-filter: blur(0.6rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .office-game_pause p {
+      font-family: inherit;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.05em;
+      color: var(--office-ink);
+      margin: 0 0 1.25rem;
+    }
+    .office-game_pause button {
+      padding: 0.8rem 1.2rem;
+      border: 0;
+      border-radius: 0.8rem;
+      background: #f5f5f5;
+      color: #171717;
+      font-family: inherit;
+      font-weight: 500;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+    .office-game_pause button:hover {
+      background: #d4d4d4;
+    }
+    .office-game_pause button span {
+      margin-left: 1rem;
+    }
+    .office-game_wrap [hidden] {
+      display: none;
+    }
+    .office-game_wrap button:focus-visible,
+    .office-game_brand:focus-visible {
+      outline: 0.125rem solid #fff;
+      outline-offset: 0.2rem;
+    }
+    .office-game_wrap {
+      @media (width < 48rem) {
+        min-height: 32rem;
+        .office-game_header {
+          padding: 1rem;
+          gap: 0.5rem;
+        }
+        .office-game_logo {
+          width: 5rem;
+        }
+        .office-game_footer {
+          padding: 1rem;
+        }
+        .office-game_controls {
+          display: none;
+        }
+        .office-game_touch {
+          display: grid;
+          place-items: center;
+          position: absolute;
+          bottom: 1rem;
+          left: 1rem;
+          z-index: 4;
+          width: 4.5rem;
+          height: 4.5rem;
+          background: var(--office-panel);
+          border: 0;
+          border-radius: 50%;
+          backdrop-filter: blur(0.5rem);
+          touch-action: none;
+        }
+        .office-game_touch span {
+          width: 2rem;
+          height: 2rem;
+          background: #fff;
+          border: 0;
+
+          border-radius: 50%;
+          pointer-events: none;
+        }
+      }
+    }
+  }
+</style>
+
+<script>
+  import {
+    createCharacterAnimator,
+    createWalkCycle,
+    WALK_SPEED,
+  } from "@/scripts/character-animation";
+  import { prepareOfficeChair } from "@/scripts/office-chair";
+  import {
+    clearsOfficeChair,
+    createOfficeSeating,
+  } from "@/scripts/office-seating";
+  import { createChairAvoidance } from "@/scripts/office-chair-avoidance";
+  import { createOfficeWalking } from "@/scripts/office-walking";
+  import { findOfficeRoute } from "@/scripts/office-navigation";
+  import {
+    createOfficeBotanicals,
+    createReferenceShelfLamp,
+  } from "@/scripts/office-botanicals";
+  import { createStudioLight } from "@/scripts/studio-light";
+  import {
+    createWaterValvePanel,
+    roundedPanelPath,
+  } from "@/scripts/water-valve-panel";
+  import {
+    createElgatoArm,
+    createShureSM7B,
+    createOpalC1,
+  } from "@/scripts/desk-equipment";
+  import { nearestLanding } from "@/scripts/office-landing";
+  import { batchRigidMeshes, accelerateOfficePicking } from "@/scripts/office-render-optimization";
+  import { createEchoDot, createRoomLightSwitch, createEchoCommand } from "@/scripts/office-echo";
+  import { createWindowLandscape } from "@/scripts/window-landscape";
+  import { prepareCharacter } from "@/scripts/character-materials";
+  import {
+    createWebflowAward,
+    createModernWebflowAwards,
+  } from "@/scripts/office-award";
+  import { createLeafMotion } from "@/scripts/office-leaf-motion";
+  import {
+    createShelfFocusTargets,
+    shelfFocusDistance,
+    type ShelfFocusTarget,
+  } from "@/scripts/office-shelf-focus";
+  import * as T from "three";
+  import shelfMarkSvg from "@/assets/logo/shelf-mark.svg?raw";
+  import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+  import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+  import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+  import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+  import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
+  import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+  import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+  import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
+  import { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";
+  import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+  import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+
+  const root = document.querySelector<HTMLElement>("[data-office]");
+  if (root)
+    void mountOffice(root).catch((error) => {
+      console.error("Office could not start", error);
+      const loading = root.querySelector<HTMLElement>("[data-loading]");
+      if (loading) {
+        loading.hidden = false;
+        loading.textContent =
+          "The office could not load. Please reload to try again.";
+      }
+    });
+
+  async function mountOffice(root: HTMLElement) {
+    const get = <E extends HTMLElement = HTMLElement>(selector: string) =>
+      root.querySelector<E>(selector)!;
+    const view = get("[data-view]");
+    const loading = get("[data-loading]");
+    const loadingBar = get("[data-load-bar]");
+    const loadingLabel = get("[data-load-label]");
+    const loadingPercent = get("[data-load-percent]");
+    const loadingProgress = get("[data-load-progress]");
+    function setLoadingProgress(value: number, label: string) {
+      loadingBar.style.transform = `scaleX(${value / 100})`;
+      loadingPercent.textContent = `${value}%`;
+      loadingProgress.setAttribute("aria-valuenow", String(value));
+      loadingLabel.textContent = label;
+    }
+    let loadedAssets = 0;
+    const trackAsset = async <Value,>(asset: Promise<Value>) => {
+      const value = await asset;
+      loadedAssets++;
+      setLoadingProgress(Math.round(loadedAssets / 7 * 85), loadedAssets < 4 ? "Setting the scene…" : "Arranging the details…");
+      return value;
+    };
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    const [
+      model,
+      studioStand,
+      macbook,
+      lumi,
+      officeChair,
+      botanicals,
+      modernAwards,
+    ] = await Promise.all([
+      trackAsset(loader.loadAsync("/models/reference-character.glb")),
+      trackAsset(loader.loadAsync("/models/studio-light-stand.glb")),
+      trackAsset(loader.loadAsync("/models/macbook-pro-14-m5.glb")),
+      trackAsset(loader.loadAsync("/models/lumi-shelf.glb")),
+      trackAsset(loader.loadAsync("/models/office-chair.glb")),
+      trackAsset(createOfficeBotanicals()),
+      trackAsset(createModernWebflowAwards()),
+    ]);
+    setLoadingProgress(90, "Turning on the lights…");
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    const abort = new AbortController();
+    const signal = abort.signal;
+    const compact = matchMedia("(max-width: 48rem)").matches;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    let renderer: T.WebGLRenderer;
+    try {
+      renderer = new T.WebGLRenderer({
+        antialias: true,
+        powerPreference: "high-performance",
+      });
+    } catch {
+      loading.textContent =
+        "This little office needs WebGL. Try opening it in a browser with hardware acceleration.";
+      return;
+    }
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    // The beauty and AO passes share the same shadow maps within each frame.
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.type = T.PCFShadowMap;
+    renderer.toneMapping = T.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.domElement.setAttribute("aria-hidden", "true");
+    view.append(renderer.domElement);
+    const scene = new T.Scene();
+    scene.background = new T.Color("#090909");
+    scene.fog = new T.FogExp2("#090909", 0.018);
+    const camera = new T.PerspectiveCamera(36, 1, 0.1, 80);
+    const pmrem = new T.PMREMGenerator(renderer);
+    const environment = new RoomEnvironment();
+    const environmentTarget = pmrem.fromScene(environment, 0.04);
+    scene.environment = environmentTarget.texture;
+    scene.environmentIntensity = 0.25;
+    environment.dispose();
+    pmrem.dispose();
+    const world = new T.Group();
+    const leftWall = new T.Group();
+    const backWall = new T.Group();
+    scene.add(world, leftWall, backWall);
+    let seed = 43;
+    function random() {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    }
+    function texture(kind: "wood" | "fabric" | "hair") {
+      const canvas = document.createElement("canvas");
+      const size = kind === "wood" ? 1024 : 256;
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = kind === "wood" ? "#bba17b" : "#b3aaa1";
+      ctx.fillRect(0, 0, size, size);
+      for (let i = 0; i < (kind === "wood" ? 12000 : 12000); i++) {
+        const x = random() * size,
+          y = random() * size;
+        ctx.strokeStyle = `rgba(${random() > 0.5 ? "255,242,218" : "38,22,12"},${random() * (kind === "wood" ? 0.14 : 0.25)})`;
+        ctx.lineWidth = 0.3 + random() * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(
+          x + (kind === "wood" ? random() * 2 : random() * 4),
+          y + (kind === "wood" ? 15 + random() * 90 : 2 + random() * 8),
+        );
+        ctx.stroke();
+      }
+      const tex = new T.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = T.RepeatWrapping;
+      tex.colorSpace = T.SRGBColorSpace;
+      tex.anisotropy = 4;
+      return tex;
+    }
+    const fabricTex = texture("fabric");
+    function mat(color: string, roughness = 0.7, metalness = 0) {
+      return new T.MeshStandardMaterial({ color, roughness, metalness });
+    }
+    const shelfCanvas = document.createElement("canvas");
+    shelfCanvas.width = 2048;
+    shelfCanvas.height = 512;
+    const grain = shelfCanvas.getContext("2d")!;
+    grain.fillStyle = "#a67448";
+    grain.fillRect(0, 0, 2048, 512);
+    for (let i = 0; i < 470; i++) {
+      const y = random() * 512;
+      const bend = 4 + random() * 13;
+      const phase = random() * Math.PI * 2;
+      grain.strokeStyle =
+        i % 4 === 0
+          ? "rgba(218,166,111,.18)"
+          : `rgba(83,43,22,${0.045 + random() * 0.1})`;
+      grain.lineWidth = 0.4 + random() * 2.2;
+      grain.beginPath();
+      for (let x = 0; x <= 2048; x += 12) {
+        const gy =
+          y + Math.sin(x / 230 + phase) * bend + Math.sin(x / 85 + phase) * 1.5;
+        if (x === 0) grain.moveTo(x, gy);
+        else grain.lineTo(x, gy);
+      }
+      grain.stroke();
+    }
+    for (let i = 0; i < 6500; i++) {
+      grain.fillStyle = `rgba(75,39,21,${random() * 0.18})`;
+      grain.fillRect(
+        random() * 2048,
+        random() * 512,
+        2 + random() * 12,
+        0.4 + random() * 0.7,
+      );
+    }
+    const shelfTexture = new T.CanvasTexture(shelfCanvas);
+    shelfTexture.colorSpace = T.SRGBColorSpace;
+    shelfTexture.wrapS = shelfTexture.wrapT = T.RepeatWrapping;
+    shelfTexture.anisotropy = Math.min(
+      8,
+      renderer.capabilities.getMaxAnisotropy(),
+    );
+    const oak = mat("#ffffff", 0.78);
+    oak.map = shelfTexture;
+    oak.bumpMap = shelfTexture;
+    oak.bumpScale = 0.004;
+    const charcoal = mat("#272c30", 0.95),
+      black = mat("#191b17", 0.65),
+      metal = mat("#34372e", 0.4, 0.65);
+
+    function mesh(
+      g: T.BufferGeometry,
+      material: T.Material,
+      parent: T.Object3D,
+      x = 0,
+      y = 0,
+      z = 0,
+    ) {
+      const m = new T.Mesh(g, material);
+      m.position.set(x, y, z);
+      m.castShadow = m.receiveShadow = true;
+      parent.add(m);
+      return m;
+    }
+    function box(
+      w: number,
+      h: number,
+      d: number,
+      material: T.Material,
+      parent: T.Object3D,
+      x = 0,
+      y = 0,
+      z = 0,
+      radius = 0.025,
+    ) {
+      return mesh(
+        radius
+          ? new RoundedBoxGeometry(w, h, d, 3, radius)
+          : new T.BoxGeometry(w, h, d),
+        material,
+        parent,
+        x,
+        y,
+        z,
+      );
+    }
+    const sphereGeo = new T.SphereGeometry(1, 32, 24);
+    function ellipsoid(
+      x: number,
+      y: number,
+      z: number,
+      sx: number,
+      sy: number,
+      sz: number,
+      material: T.Material,
+      parent: T.Object3D,
+    ) {
+      const m = mesh(sphereGeo, material, parent, x, y, z);
+      m.scale.set(sx, sy, sz);
+      return m;
+    }
+    function cylinder(
+      rt: number,
+      rb: number,
+      h: number,
+      material: T.Material,
+      parent: T.Object3D,
+      x = 0,
+      y = 0,
+      z = 0,
+    ) {
+      return mesh(
+        new T.CylinderGeometry(rt, rb, h, 32),
+        material,
+        parent,
+        x,
+        y,
+        z,
+      );
+    }
+    function line(
+      points: number[][],
+      radius: number,
+      material: T.Material,
+      parent: T.Object3D,
+    ) {
+      return mesh(
+        new T.TubeGeometry(
+          new T.CatmullRomCurve3(
+            points.map((p) => new T.Vector3(p[0], p[1], p[2])),
+          ),
+          Math.max(8, points.length * 5),
+          radius,
+          6,
+          false,
+        ),
+        material,
+        parent,
+      );
+    }
+    function group(parent: T.Object3D, x = 0, y = 0, z = 0) {
+      const g = new T.Group();
+      g.position.set(x, y, z);
+      parent.add(g);
+      return g;
+    }
+    function beam(
+      a: number[],
+      b: number[],
+      r: number,
+      material: T.Material,
+      parent: T.Object3D,
+    ) {
+      const start = new T.Vector3(...a),
+        end = new T.Vector3(...b);
+      const m = cylinder(r, r, start.distanceTo(end), material, parent);
+      m.position.copy(start.add(end).multiplyScalar(0.5));
+      m.quaternion.setFromUnitVectors(
+        new T.Vector3(0, 1, 0),
+        new T.Vector3(...b).sub(new T.Vector3(...a)).normalize(),
+      );
+      return m;
+    }
+    // Layer irregular tufts and loose fibers so the carpet reads at room scale.
+    const carpetCanvas = document.createElement("canvas");
+    carpetCanvas.width = carpetCanvas.height = 256;
+    const carpetContext = carpetCanvas.getContext("2d")!;
+    carpetContext.fillStyle = "#c4c4c4";
+    carpetContext.fillRect(0, 0, 256, 256);
+    let fiberSeed = 73;
+    const fiberRandom = () => {
+      fiberSeed = (fiberSeed * 1664525 + 1013904223) >>> 0;
+      return fiberSeed / 4294967296;
+    };
+    for (let i = 0; i < 4200; i++) {
+      const x = fiberRandom() * 256,
+        y = fiberRandom() * 256;
+      const radius = 0.7 + fiberRandom() * 2.5;
+      carpetContext.fillStyle =
+        fiberRandom() > 0.5 ? "rgba(255,255,255,0.22)" : "rgba(24,24,24,0.2)";
+      carpetContext.beginPath();
+      carpetContext.ellipse(
+        x,
+        y,
+        radius,
+        radius * 0.6,
+        fiberRandom() * Math.PI,
+        0,
+        Math.PI * 2,
+      );
+      carpetContext.fill();
+    }
+    for (let i = 0; i < 18000; i++) {
+      const x = fiberRandom() * 256,
+        y = fiberRandom() * 256;
+      const angle = fiberRandom() * Math.PI * 2;
+      const length = 1.2 + fiberRandom() * 3.5;
+      carpetContext.strokeStyle =
+        fiberRandom() > 0.5 ? "rgba(255,255,255,0.3)" : "rgba(30,30,30,0.24)";
+      carpetContext.lineWidth = 0.5 + fiberRandom() * 0.5;
+      carpetContext.beginPath();
+      carpetContext.moveTo(x, y);
+      carpetContext.lineTo(
+        x + Math.cos(angle) * length,
+        y + Math.sin(angle) * length,
+      );
+      carpetContext.stroke();
+    }
+    const carpetTexture = new T.CanvasTexture(carpetCanvas);
+    carpetTexture.wrapS = carpetTexture.wrapT = T.RepeatWrapping;
+    carpetTexture.repeat.set(4.18, 1.93);
+    carpetTexture.colorSpace = T.SRGBColorSpace;
+    carpetTexture.anisotropy = Math.min(
+      8,
+      renderer.capabilities.getMaxAnisotropy(),
+    );
+    const carpet = mat("#797f88", 1);
+    carpet.map = carpetTexture;
+    carpet.bumpMap = carpetTexture;
+    carpet.bumpScale = 0.028;
+    box(8.5, 0.32, 4.0, mat("#282b30", 1), world, 0, -0.22, -1.35, 0.09);
+    box(8.36, 0.065, 3.86, carpet, world, 0, -0.035, -1.35, 0.02);
+    const windowOpening = { x: -2.88, y: 2.05, width: 1.4, height: 3.12 };
+    const backWallFront = -3.16;
+    const backWallDepth = 0.4;
+    const backWallShape = new T.Shape();
+    backWallShape.moveTo(-4.25, -0.165);
+    backWallShape.lineTo(4.25, -0.165);
+    backWallShape.lineTo(4.25, 4.485);
+    backWallShape.lineTo(-4.25, 4.485);
+    backWallShape.closePath();
+    const opening = new T.Path();
+    const openingLeft = windowOpening.x - windowOpening.width / 2;
+    const openingRight = windowOpening.x + windowOpening.width / 2;
+    const openingBottom = windowOpening.y - windowOpening.height / 2;
+    const openingTop = windowOpening.y + windowOpening.height / 2;
+    opening.moveTo(openingLeft, openingBottom);
+    opening.lineTo(openingLeft, openingTop);
+    opening.lineTo(openingRight, openingTop);
+    opening.lineTo(openingRight, openingBottom);
+    opening.closePath();
+    backWallShape.holes.push(opening);
+    const valvePanelScale = 0.82;
+    const valvePanelX = (openingRight + (-0.65 - 0.083 / 2)) / 2;
+    const valveOpening = roundedPanelPath(
+      0.65 * valvePanelScale,
+      0.55 * valvePanelScale,
+      0.035 * valvePanelScale,
+    )
+      .getPoints(12)
+      .reverse();
+    for (const point of valveOpening)
+      point.add(new T.Vector2(valvePanelX, 2.45));
+    backWallShape.holes.push(new T.Path(valveOpening));
+    mesh(
+      new T.ExtrudeGeometry(backWallShape, {
+        depth: backWallDepth,
+        bevelEnabled: false,
+        steps: 1,
+      }),
+      charcoal,
+      backWall,
+      0,
+      0,
+      backWallFront - backWallDepth,
+    );
+    box(0.16, 4.65, 3.9, charcoal, leftWall, -4.22, 2.16, -1.35);
+    box(8.3, 0.13, 0.055, black, backWall, 0, 0.05, -3.12);
+    box(0.08, 0.13, 3.8, black, leftWall, -4.08, 0.05, -1.35);
+    for (let i = 0; i < 41; i++) {
+      const slat = box(
+        0.083,
+        4.56,
+        0.09,
+        oak,
+        backWall,
+        -0.65 + i * 0.12,
+        2.17,
+        -3.1,
+        0.008,
+      );
+      const positions = slat.geometry.getAttribute("position");
+      const normals = slat.geometry.getAttribute("normal");
+      const uv = slat.geometry.getAttribute("uv");
+      for (let v = 0; v < positions.count; v++) {
+        const across =
+          Math.abs(normals.getX(v)) > 0.5
+            ? positions.getZ(v)
+            : positions.getX(v);
+        uv.setXY(
+          v,
+          (positions.getY(v) + 2.28) / 3.75,
+          (across + 0.045) / 0.52 + i * 0.137,
+        );
+      }
+      uv.needsUpdate = true;
+    }
+    scene.add(new T.HemisphereLight("#e9d5a6", "#655137", 0.5));
+    const key = new T.DirectionalLight("#ffe2b0", 1.9);
+    key.position.set(-4, 5, 4);
+    key.castShadow = true;
+    key.shadow.mapSize.set(compact ? 2048 : 4096, compact ? 2048 : 4096);
+    key.shadow.camera.left = -7;
+    key.shadow.camera.right = 7;
+    key.shadow.camera.top = 7;
+    key.shadow.camera.bottom = -7;
+    key.shadow.normalBias = 0.012;
+    key.shadow.bias = -0.0002;
+    key.shadow.radius = 4;
+    scene.add(key);
+    const fill = new T.DirectionalLight("#d7e0c9", 0.35);
+    fill.position.set(6, 4, 2);
+    scene.add(fill);
+    const rim = new T.PointLight("#ffbd66", 18, 9, 2);
+    rim.position.set(3.5, 3.5, -1.8);
+    scene.add(rim);
+    // Fade the lit backdrop before it reaches the horizon or camera far plane.
+    const backdropMaterial = mat("#070707", 1);
+    backdropMaterial.transparent = true;
+    backdropMaterial.depthWrite = false;
+    backdropMaterial.onBeforeCompile = (shader) => {
+      shader.vertexShader = "varying vec2 vBackdropXZ;\n" + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\nvBackdropXZ = (modelMatrix * vec4(transformed, 1.0)).xz;",
+      );
+      shader.fragmentShader =
+        "varying vec2 vBackdropXZ;\n" + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <alphatest_fragment>",
+        "diffuseColor.a *= 1.0 - smoothstep(10.0, 32.0, length(vBackdropXZ - vec2(0.0, -1.35)));\n#include <alphatest_fragment>",
+      );
+    };
+    const ground = mesh(
+      new T.PlaneGeometry(200, 200),
+      backdropMaterial,
+      scene,
+      0,
+      -0.41,
+      0,
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.castShadow = false;
+
+    const whiteFrame = mat("#dadbd5", 0.65);
+    const meshGrey = mat("#a9ada9", 1);
+    meshGrey.map = fabricTex;
+    meshGrey.bumpMap = fabricTex;
+    meshGrey.bumpScale = 0.009;
+    const desk = group(world, 2.5, 0, -1.15);
+    desk.rotation.y = T.MathUtils.degToRad(-100);
+    const desktop = group(desk);
+    const desktopSurfaceHeight = 1.4 + 0.09 / 2;
+    desktop.name = "Standing desk moving top";
+    box(3, 0.09, 1.4, mat("#141718", 0.72), desktop, 0, 1.4, 0, 0.035);
+    for (const x of [-1.15, 1.15]) {
+      box(0.13, 0.88, 0.15, whiteFrame, desktop, x, 0.915, 0, 0.015);
+      box(0.18, 0.09, 1.18, whiteFrame, desk, x, 0.075, 0, 0.035);
+      box(0.17, 0.83, 0.18, whiteFrame, desk, x, 0.49, 0, 0.012);
+    }
+    box(2.4, 0.12, 0.1, black, desktop, 0, 1.22, -0.2);
+    const deskPanel = group(desktop, -1.05, 1.25, 0.66);
+    const panelOutline = new T.Shape();
+    panelOutline.moveTo(-0.255, 0.105);
+    panelOutline.lineTo(0.255, 0.105);
+    panelOutline.quadraticCurveTo(0.25, 0.015, 0.211, -0.067);
+    panelOutline.quadraticCurveTo(0.188, -0.111, 0.139, -0.112);
+    panelOutline.lineTo(-0.139, -0.112);
+    panelOutline.quadraticCurveTo(-0.188, -0.111, -0.211, -0.067);
+    panelOutline.quadraticCurveTo(-0.25, 0.015, -0.255, 0.105);
+    panelOutline.closePath();
+    mesh(
+      new T.ExtrudeGeometry(panelOutline, {
+        depth: 0.115,
+        bevelEnabled: true,
+        bevelThickness: 0.008,
+        bevelSize: 0.008,
+        bevelSegments: 3,
+        steps: 1,
+        curveSegments: 12,
+      }),
+      mat("#171719", 0.86),
+      deskPanel,
+      0,
+      0,
+      -0.06,
+    );
+    const deskButtons = [1, -1].map((direction, index) => {
+      const mirror = index === 0 ? 1 : -1;
+      const outline = new T.Shape();
+      outline.moveTo(-0.117 * mirror, 0.082);
+      outline.lineTo(0.102 * mirror, 0.082);
+      outline.lineTo(0.102 * mirror, -0.087);
+      outline.lineTo(-0.013 * mirror, -0.087);
+      outline.quadraticCurveTo(
+        -0.061 * mirror,
+        -0.087,
+        -0.081 * mirror,
+        -0.049,
+      );
+      outline.quadraticCurveTo(-0.108 * mirror, 0.008, -0.117 * mirror, 0.082);
+      outline.closePath();
+      const button = mesh(
+        new T.ExtrudeGeometry(outline, {
+          depth: 0.016,
+          bevelEnabled: true,
+          bevelThickness: 0.004,
+          bevelSize: 0.004,
+          bevelSegments: 3,
+          steps: 1,
+          curveSegments: 12,
+        }),
+        mat("#302d29", 0.88),
+        deskPanel,
+        index === 0 ? -0.111 : 0.111,
+        0,
+        0.075,
+      );
+      button.name = direction === 1 ? "Raise desk" : "Lower desk";
+      button.userData.direction = direction;
+      const arrow = mat("#f5f2df", 0.55);
+      arrow.emissive.set("#f5f2df");
+      arrow.emissiveIntensity = 0.12;
+      for (const side of [-1, 1]) {
+        beam(
+          [side * 0.051, -direction * 0.023, 0.026],
+          [0, direction * 0.024, 0.026],
+          0.01,
+          arrow,
+          button,
+        );
+      }
+      for (const [x, y] of [
+        [-0.051, -direction * 0.023],
+        [0, direction * 0.024],
+        [0.051, -direction * 0.023],
+      ]) {
+        ellipsoid(x, y, 0.026, 0.01, 0.01, 0.01, arrow, button);
+      }
+      return button;
+    });
+    const deskMin = -0.18,
+      deskMax = 0.42,
+      deskSpeed = 0.24;
+    let deskPressed: (typeof deskButtons)[number] | undefined;
+    function releaseDesk() {
+      if (!deskPressed) return;
+      get("[data-desk-status]").textContent =
+        desktop.position.y >= deskMax
+          ? "Desk at highest position"
+          : desktop.position.y <= deskMin
+            ? "Desk at lowest position"
+            : deskPressed.userData.direction > 0
+              ? "Desk raised"
+              : "Desk lowered";
+      deskPressed.position.z = 0.075;
+      deskPressed = undefined;
+    }
+    macbook.scene.scale.setScalar(3);
+    macbook.scene.position.set(0, 1.476, 0.1192);
+    desktop.add(macbook.scene);
+    const { arm: mic, socket: micMount } = createElgatoArm();
+    mic.position.set(-1.44, 1.445, -0.08);
+    desktop.add(mic);
+    micMount.add(createShureSM7B());
+    line(
+      [
+        [1.37, 0.31, 0.42],
+        [1.4, 0.16, 0.48],
+        [1.21, 0.18, 0.65],
+        [0.7, 0.26, -0.12],
+        [0.05, 0.15, 0],
+        [-0.12, -0.2, 0],
+      ],
+      0.008,
+      black,
+      mic,
+    );
+    // Camera on its own floor stand, behind the desktop and facing the chair.
+    const webcam = group(desk, 0.045, 0, -0.92);
+    for (let i = 0; i < 3; i++) {
+      const a = (i * Math.PI * 2) / 3;
+      beam(
+        [0, 0.32, 0],
+        [Math.cos(a) * 0.25, 0.035, Math.sin(a) * 0.25],
+        0.018,
+        black,
+        webcam,
+      );
+    }
+    beam([0, 0.1, 0], [0, 1.92, 0], 0.019, metal, webcam);
+    cylinder(0.03, 0.03, 0.07, black, webcam, 0, 1.2, 0);
+    const opalCamera = createOpalC1();
+    opalCamera.position.set(0.073, 2.12, 0);
+    webcam.add(opalCamera);
+    line(
+      [
+        [0.17, 2.04, -0.012],
+        [0.17, 1.8, -0.012],
+        [0.05, 1.2, 0],
+        [0.05, 0.05, 0.1],
+      ],
+      0.007,
+      whiteFrame,
+      webcam,
+    );
+
+    const chair = group(world);
+    chair.position.copy(desk.localToWorld(new T.Vector3(0, 0, 1.45)));
+    chair.rotation.y = desk.rotation.y + Math.PI;
+    chair.add(prepareOfficeChair(officeChair.scene));
+    chair.updateWorldMatrix(true, true);
+    const seatSurface = chair.getObjectByName("Seat_mesh_Mesh_0")!;
+    const seatHeight = new T.Box3().setFromObject(seatSurface).max.y;
+
+    const softbox = createStudioLight(studioStand.scene);
+    softbox.position.set(3.75, 0, -2.65);
+    softbox.rotation.y = desk.rotation.y;
+    world.add(softbox);
+    const studioLight = new T.SpotLight("#ffe5bd", 3, 7, Math.PI / 3, 1, 2);
+    const studioHead = softbox.getObjectByName("studio-light-head")!;
+    studioLight.position.copy(studioHead.localToWorld(new T.Vector3(0, 0, 1)));
+    studioLight.target.position.copy(
+      studioHead.localToWorld(new T.Vector3(0, 0, 4)),
+    );
+    scene.add(studioLight, studioLight.target);
+
+    // Floor uplight with a level base and a diagonally cut opening.
+    const uplight = group(world, 0.25, 0, -2.85);
+    const lampHeight = 0.75,
+      lampRadius = 0.13,
+      cutSlope = 0.7;
+    function cutCylinder(radius: number, inset = 0) {
+      const geometry = new T.CylinderGeometry(
+        radius,
+        radius,
+        lampHeight - inset,
+        48,
+        1,
+        true,
+      );
+      const positions = geometry.getAttribute("position");
+      for (let i = 0; i < positions.count; i++) {
+        const top = positions.getY(i) > 0;
+        positions.setY(
+          i,
+          top ? lampHeight - inset + cutSlope * positions.getZ(i) : 0.015,
+        );
+      }
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+    mesh(cutCylinder(lampRadius), mat("#101114", 0.6), uplight);
+    const reflector = mat("#c4b798", 0.35, 0.55);
+    reflector.side = T.BackSide;
+    mesh(cutCylinder(lampRadius - 0.012, 0.012), reflector, uplight);
+    cylinder(lampRadius, lampRadius, 0.025, black, uplight, 0, 0.018, 0);
+    const lip: number[][] = [];
+    for (let i = 0; i <= 64; i++) {
+      const a = (i / 64) * Math.PI * 2;
+      const z = Math.sin(a) * lampRadius;
+      lip.push([Math.cos(a) * lampRadius, lampHeight + cutSlope * z, z]);
+    }
+    line(lip, 0.006, black, uplight);
+    const emitter = mesh(
+      new T.CircleGeometry(0.112, 48),
+      new T.MeshStandardMaterial({
+        color: "#ffdda3",
+        emissive: "#ffbb60",
+        emissiveIntensity: 1.8,
+        roughness: 0.4,
+        side: T.DoubleSide,
+      }),
+      uplight,
+      0,
+      0.64,
+      0,
+    );
+    emitter.rotation.x = -Math.PI / 2;
+    const glow = new T.SpotLight("#ffb259", 80, 5, 0.36, 0.65, 1.4);
+    glow.position.set(0.25, 0.76, -2.91);
+    glow.target.position.set(0.25, 2.1, -3.13);
+    scene.add(glow, glow.target);
+    line(
+      [
+        [0.25, 0.04, -2.85],
+        [0.06, 0.035, -2.5],
+        [-0.15, 0.035, -2.62],
+        [-0.3, 0.035, -2.85],
+      ],
+      0.009,
+      black,
+      world,
+    );
+    box(0.24, 0.38, 0.035, black, world, -0.4, 0.27, -3.12, 0.025);
+    for (const y of [0.2, 0.34])
+      for (const x of [-0.44, -0.36])
+        box(0.015, 0.035, 0.009, metal, world, x, y, -3.097, 0.002);
+
+    // Left wall shelving and the window tucked into the adjoining corner.
+    const leftShelves = group(leftWall, -4.03, 0, -1.35);
+    leftShelves.rotation.y = Math.PI / 2;
+    const shelfGlow = new T.MeshStandardMaterial({
+      color: "#fff0ca",
+      emissive: "#ffdd99",
+      emissiveIntensity: 4.5,
+      roughness: 0.8,
+    });
+    RectAreaLightUniformsLib.init();
+    for (const y of [2.0, 3.05]) {
+      const shelf = box(3.75, 0.15, 0.52, oak, leftShelves, 0, y, 0.17, 0.016);
+      const shelfPositions = shelf.geometry.getAttribute("position");
+      const shelfNormals = shelf.geometry.getAttribute("normal");
+      const shelfUV = shelf.geometry.getAttribute("uv");
+      for (let i = 0; i < shelfPositions.count; i++) {
+        const x = shelfPositions.getX(i),
+          sy = shelfPositions.getY(i),
+          z = shelfPositions.getZ(i);
+        const top = Math.abs(shelfNormals.getY(i)) > 0.5;
+        shelfUV.setXY(
+          i,
+          (x + 1.875) / 3.75,
+          (top ? z + 0.26 : sy + 0.075) / 0.52 + (y > 3 ? 0.37 : 0),
+        );
+      }
+      shelfUV.needsUpdate = true;
+      // Full-length diffuser tucked against the wall, below the rear shelf edge.
+      box(3.7, 0.08, 0.08, shelfGlow, leftShelves, 0, y - 0.115, -0.06, 0.008);
+      const wallWash = new T.RectAreaLight("#ffdda4", 40, 3.7, 0.12);
+      wallWash.position.set(-4.015, y - 0.16, -1.35);
+      wallWash.lookAt(-4.14, y - 0.6, -1.35);
+      scene.add(wallWash);
+      const shelfFill = new T.RectAreaLight("#ffe4b5", 16, 3.7, 0.12);
+      shelfFill.position.set(-4.0, y - 0.16, -1.35);
+      shelfFill.lookAt(-3.2, y - 0.8, -1.35);
+      scene.add(shelfFill);
+    }
+    const shelfDecor = group(leftShelves, 0, 0.0375, 0);
+    const shelfObjects: T.Object3D[] = [];
+    for (const [i, trophy] of modernAwards.entries()) {
+      trophy.position.set(-0.65 + i * 0.18, 2.0375, 0.17);
+      trophy.rotation.y = -0.18;
+      shelfDecor.add(trophy);
+      shelfObjects.push(trophy);
+    }
+    const shelfMarkScale = 0.42 / 247;
+    const shelfMarkShapes = new SVGLoader()
+      .parse(shelfMarkSvg)
+      .paths.flatMap((path) => path.toShapes());
+    const shelfMarkGeometry = new T.ExtrudeGeometry(shelfMarkShapes, {
+      depth: 0.075 / shelfMarkScale,
+      bevelEnabled: true,
+      bevelThickness: 0.002 / shelfMarkScale,
+      bevelSize: 0.002 / shelfMarkScale,
+      bevelSegments: 2,
+      steps: 1,
+    });
+    shelfMarkGeometry.rotateX(Math.PI);
+    shelfMarkGeometry.scale(shelfMarkScale, shelfMarkScale, shelfMarkScale);
+    shelfMarkGeometry.center();
+    shelfMarkGeometry.computeBoundingBox();
+    const shelfMark = mesh(
+      shelfMarkGeometry,
+      mat("#ffffff", 0.55),
+      shelfDecor,
+      -0.1,
+      2.075 - shelfDecor.position.y - shelfMarkGeometry.boundingBox!.min.y,
+      0.12,
+    );
+    shelfMark.name = "T.Ricks sculpture";
+    shelfMark.userData.inspectionYaw = 2.3;
+    shelfMark.userData.inspectionPitch = 0.03;
+    shelfMark.userData.contrastHover = true;
+    const curvedLamp = createReferenceShelfLamp(true);
+    const webflowAward = createWebflowAward();
+    webflowAward.position.set(-0.82, 3.0875, 0.17);
+    webflowAward.rotation.y = -0.26;
+    shelfDecor.add(webflowAward);
+    curvedLamp.position.set(0.2, 2.0375, 0.16);
+    shelfDecor.add(curvedLamp);
+    const cylinderLamp = createReferenceShelfLamp(false);
+    cylinderLamp.position.set(0.72, 3.0875, 0.16);
+    shelfDecor.add(cylinderLamp);
+    const [lowerPlant, upperPlant] = botanicals.trailingPlants;
+    lowerPlant.position.set(0.78, 2.0375, 0.17);
+    upperPlant.position.set(-0.1, 3.0875, 0.17);
+    shelfDecor.add(lowerPlant, upperPlant);
+    const lumiFigurine = group(shelfDecor, 0.5, 2.0375, 0.2);
+    lumiFigurine.name = "Lumi shelf figurine";
+    lumiFigurine.userData.contrastHover = true;
+    lumi.scene.traverse((object) => {
+      if (!(object instanceof T.Mesh)) return;
+      const materials = Array.isArray(object.material)
+        ? object.material
+        : [object.material];
+      for (const material of materials) {
+        if (!(material instanceof T.MeshStandardMaterial)) continue;
+        const region = material.name;
+        material.color.set(
+          region === "Hat" || region === "Wand"
+            ? "#a8ad42"
+            : region === "Eyes"
+              ? "#030503"
+              : "#eddeae",
+        );
+        material.roughness = region === "Eyes" ? 0.3 : 0.8;
+        material.emissive.set("#000000");
+        material.emissiveIntensity = 0;
+      }
+    });
+    const lumiBounds = new T.Box3().setFromObject(lumi.scene);
+    const lumiSize = lumiBounds.getSize(new T.Vector3());
+    const lumiCenter = lumiBounds.getCenter(new T.Vector3());
+    const lumiScale = 0.34 / lumiSize.y;
+    lumi.scene.scale.setScalar(lumiScale);
+    lumi.scene.position.set(
+      -lumiCenter.x * lumiScale,
+      -lumiBounds.min.y * lumiScale,
+      -lumiCenter.z * lumiScale,
+    );
+    lumiFigurine.add(lumi.scene);
+    const wireSculpture = group(shelfDecor, 1.13, 2.19, 0.12);
+    mesh(
+      new T.IcosahedronGeometry(0.14, 0),
+      new T.MeshStandardMaterial({ color: "#35393a", wireframe: true }),
+      wireSculpture,
+    );
+
+    for (const item of shelfDecor.children) item.position.x *= 1.6;
+    wireSculpture.name = "Geometric wire sculpture";
+    shelfObjects.push(shelfMark, webflowAward, lumiFigurine, wireSculpture);
+    const shelfPicking = createShelfFocusTargets(shelfObjects, signal, scene);
+
+    const windowGroup = group(
+      backWall,
+      windowOpening.x,
+      windowOpening.y,
+      backWallFront - backWallDepth + 0.06,
+    );
+    const windowLandscape = createWindowLandscape();
+    const windowEye = new T.Vector3();
+    const windowWalkParallax = new T.Vector3();
+    const windowWalkTarget = new T.Vector3();
+    const windowFrame = mat("#101214", 0.5, 0.2);
+    const daylightMaterial = new T.MeshBasicMaterial({ map: windowLandscape.texture });
+    mesh(
+      new T.PlaneGeometry(windowOpening.width, windowOpening.height),
+      daylightMaterial,
+      windowGroup,
+      0,
+      0,
+      0.012,
+    );
+    for (const x of [-0.65, 0.65])
+      box(0.075, 3.05, 0.1, windowFrame, windowGroup, x, 0, 0.045, 0.008);
+    for (const y of [-1.49, 0, 1.49])
+      box(1.34, 0.065, 0.1, windowFrame, windowGroup, 0, y, 0.06, 0.008);
+    box(1.5, 0.07, 0.52, charcoal, windowGroup, 0, -1.55, 0.2, 0.012);
+    box(1.43, 0.2, 0.12, black, windowGroup, 0, 1.66, 0.365, 0.015);
+    for (let i = 0; i < 3; i++)
+      box(
+        1.37,
+        0.025,
+        0.045,
+        mat("#3d4140"),
+        windowGroup,
+        0,
+        1.58 - i * 0.035,
+        0.445,
+        0.004,
+      );
+    const valvePanel = createWaterValvePanel(charcoal.color);
+    valvePanel.scale.setScalar(valvePanelScale);
+    valvePanel.position.set(valvePanelX, 2.45, backWallFront);
+    backWall.add(valvePanel);
+
+    const floorPlant = botanicals.floorPlant;
+    floorPlant.position.set(-2.98, 0, 0.05);
+    world.add(floorPlant);
+    const plantUplight = uplight.clone(true);
+    plantUplight.position.set(-2.42, 0, 0.1);
+    plantUplight.rotation.y = Math.PI / 2;
+    world.add(plantUplight);
+    const plantGlow = glow.clone();
+    plantGlow.intensity = 12;
+    plantGlow.position.set(-2.48, 0.76, 0.1);
+    plantGlow.target = new T.Object3D();
+    plantGlow.target.position.set(-3.05, 1.75, 0.05);
+    scene.add(plantGlow, plantGlow.target);
+    line(
+      [
+        [-2.42, 0.035, 0.1],
+        [-2.65, 0.03, -0.14],
+        [-3.15, 0.03, -0.25],
+        [-4.04, 0.03, -0.25],
+      ],
+      0.009,
+      black,
+      world,
+    );
+    const character = group(scene, -1.55, 0, -0.8);
+    const characterScale = 0.9;
+    character.scale.setScalar(characterScale);
+    character.rotation.y = 0.62;
+    character.add(model.scene);
+    const characterRoomLight = { value: 1 };
+    prepareCharacter(model.scene, characterRoomLight);
+    const characterAnimator = createCharacterAnimator(model.scene);
+    const walkCycle = createWalkCycle();
+    // Keep the desktop, telescoping legs, equipment, and buttons live so
+    // height adjustments and button presses remain visible after batching.
+    const movingDesk = group(scene);
+    movingDesk.position.copy(desk.position);
+    movingDesk.quaternion.copy(desk.quaternion);
+    movingDesk.add(desktop);
+    scene.attach(desk);
+    scene.attach(chair);
+
+    // Batch walls separately so their attached details cut away with them.
+    const oldGeometries = new Set<T.BufferGeometry>();
+    function batchStatic(source: T.Group) {
+      source.updateMatrixWorld(true);
+      const batches = new Map<T.Material, T.BufferGeometry[]>();
+      const lights: T.Light[] = [];
+      source.traverse((o) => {
+        if (o instanceof T.Light) lights.push(o);
+        if (o instanceof T.Mesh && o.geometry !== sphereGeo)
+          oldGeometries.add(o.geometry);
+        if (o instanceof T.Mesh && !Array.isArray(o.material)) {
+          const geometry: T.BufferGeometry = o.geometry.index
+            ? o.geometry.toNonIndexed()
+            : o.geometry.clone();
+          for (const [name, attribute] of Object.entries(geometry.attributes)) {
+            if (!attribute.normalized) continue;
+            const values = new Float32Array(
+              attribute.count * attribute.itemSize,
+            );
+            for (let i = 0; i < attribute.count; i++)
+              for (
+                let component = 0;
+                component < attribute.itemSize;
+                component++
+              )
+                values[i * attribute.itemSize + component] =
+                  attribute.getComponent(i, component);
+            geometry.setAttribute(
+              name,
+              new T.Float32BufferAttribute(values, attribute.itemSize),
+            );
+          }
+          geometry.applyMatrix4(o.matrixWorld);
+          const list = batches.get(o.material) || [];
+          list.push(geometry);
+          batches.set(o.material, list);
+        }
+      });
+      const mergedGroup = new T.Group();
+      for (const [material, geometries] of batches) {
+        const merged = mergeGeometries(geometries, false);
+        if (merged) mesh(merged, material, mergedGroup);
+        geometries.forEach((g) => g.dispose());
+      }
+      scene.add(mergedGroup);
+      // Preserve shelf-lamp illumination and its world position when the
+      // original model hierarchy is replaced with batched meshes.
+      for (const light of lights) mergedGroup.attach(light);
+      scene.remove(source);
+      return mergedGroup;
+    }
+    const leafMotion = createLeafMotion(
+      [floorPlant, lowerPlant, upperPlant],
+      scene,
+      camera,
+      view,
+      signal,
+    );
+    batchStatic(world);
+    const staticLeftWall = batchStatic(leftWall);
+    const staticBackWall = batchStatic(backWall);
+    oldGeometries.forEach((g) => g.dispose());
+
+    const retiredRigidGeometry = new Set<T.BufferGeometry>();
+    for (const object of [desktop, desk, chair, ...shelfObjects]) {
+      for (const geometry of batchRigidMeshes(object, new Set(deskButtons))) retiredRigidGeometry.add(geometry);
+    }
+    scene.traverse(object => { if (object instanceof T.Mesh) retiredRigidGeometry.delete(object.geometry); });
+    retiredRigidGeometry.forEach(geometry => geometry.dispose());
+    const roomLighting = createRoomLightSwitch(scene, daylightMaterial, characterRoomLight);
+    // Daylight remains independent of the room's switched fixtures.
+    const daylight = new T.SpotLight("#c6deff", 18, 10, .95, 1, 2);
+    daylight.position.set(windowOpening.x, 2.5, -2.85);
+    daylight.target.position.set(-.5, .8, .5);
+    daylight.castShadow = true;
+    daylight.shadow.mapSize.set(1024, 1024);
+    daylight.shadow.normalBias = .025;
+    scene.add(daylight, daylight.target);
+    const windowBounce = new T.RectAreaLight("#c6deff", 3, 1.25, 2.8);
+    windowBounce.position.set(windowOpening.x, 2.05, -2.83);
+    windowBounce.lookAt(-1, 1.3, 1);
+    scene.add(windowBounce);
+    const echo = createEchoDot();
+    // Nestle the speaker between the two skirting boards beside the window.
+    echo.position.set(-3.76, 0, -2.83);
+    scene.add(echo);
+    const disposePicking = accelerateOfficePicking(scene);
+    signal.addEventListener("abort", disposePicking, { once: true });
+    const echoCommand = createEchoCommand();
+    const speech = get("[data-speech]");
+    const speechLetters = get("[data-speech-letters]");
+    const speechSize = get("[data-speech-size]");
+    const echoButton = get<HTMLButtonElement>("[data-echo-command]");
+    const speechAnchor = new T.Vector3();
+    const head = model.scene.getObjectByName("Head")!;
+    function speakToEcho() {
+      const message = echoCommand.start();
+      if (!message) return;
+      speechSize.textContent = message;
+      get("[data-speech-status]").textContent = message;
+      speechLetters.textContent = "";
+    }
+    echoButton.addEventListener("click", () => { if (!paused) speakToEcho(); }, { signal });
+
+    function updateWallCutaway() {
+      // Use the animated camera and a small hysteresis band to avoid flicker
+      // while orbiting along a wall. Wide view always shows the complete room.
+      staticLeftWall.visible =
+        wideView ||
+        camera.position.x > (staticLeftWall.visible ? -4.04 : -3.94);
+      staticBackWall.visible =
+        wideView ||
+        camera.position.z > (staticBackWall.visible ? -3.06 : -2.96);
+      leafMotion.setShelfVisible(staticLeftWall.visible);
+    }
+
+    const targetRender = new T.WebGLRenderTarget(1, 1, {
+      type: T.HalfFloatType,
+      samples: Math.min(4, renderer.capabilities.maxSamples),
+    });
+    const composer = new EffectComposer(renderer, targetRender);
+    composer.addPass(new RenderPass(scene, camera));
+    const ao = compact ? null : new GTAOPass(scene, camera, 1, 1);
+    if (ao) {
+      ao.updateGtaoMaterial({
+        radius: 0.35,
+        thickness: 1,
+        distanceExponent: 1.5,
+        samples: 8,
+      });
+      ao.blendIntensity = 0.4;
+      composer.addPass(ao);
+    }
+    const bloom = new UnrealBloomPass(new T.Vector2(1, 1), 0.07, 0.65, 1.8);
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+    // Smooth the final image as well as geometry edges, including bloom and AO.
+    composer.addPass(new SMAAPass());
+
+    const softboxPosition = softbox.getWorldPosition(new T.Vector3());
+    const webcamPosition = webcam.getWorldPosition(new T.Vector3());
+    const blockers = [
+      {
+        x: desk.position.x,
+        z: desk.position.z,
+        w:
+          Math.abs(Math.cos(desk.rotation.y)) * 3.1 +
+          Math.abs(Math.sin(desk.rotation.y)) * 1.5,
+        d:
+          Math.abs(Math.sin(desk.rotation.y)) * 3.1 +
+          Math.abs(Math.cos(desk.rotation.y)) * 1.5,
+      },
+      { x: chair.position.x, z: chair.position.z, w: 1.5, d: 1.65 },
+      { x: softboxPosition.x, z: softboxPosition.z, w: 0.6, d: 0.6 },
+      { x: webcamPosition.x, z: webcamPosition.z, w: 0.55, d: 0.55 },
+      { x: 0.25, z: -2.85, w: 0.3, d: 0.3 },
+      { x: -2.98, z: 0.05, w: 0.8, d: 0.8 },
+      { x: -2.42, z: 0.1, w: 0.3, d: 0.3 },
+      { x: -3.8, z: -1.35, w: 0.68, d: 3.75 },
+    ];
+    const playerRadius = 0.3;
+    function clearsOtherObjects(x: number, z: number) {
+      return (
+        x > -3.8 + playerRadius &&
+        x < 3.85 - playerRadius &&
+        z > -2.9 + playerRadius &&
+        z < 0.35 - playerRadius &&
+        !blockers.some(
+          (b, index) =>
+            index !== 1 &&
+            Math.abs(x - b.x) < b.w / 2 + 0.65 &&
+            Math.abs(z - b.z) < b.d / 2 + 0.65,
+        )
+      );
+    }
+    function walkable(x: number, z: number) {
+      return clearsOtherObjects(x, z) && clearsOfficeChair(chair, x, z);
+    }
+    const keys = new Set<string>();
+    const seating = createOfficeSeating(
+      character,
+      chair,
+      seatHeight,
+      desk.position,
+      walkable,
+    );
+    const walking = createOfficeWalking();
+    const velocity = walking.velocity;
+    const chairAvoidance = createChairAvoidance(chair, walkable, clearsOtherObjects);
+    const joy = new T.Vector2();
+    let sitRoute: T.Vector2[] | undefined;
+    let sitPressed = false;
+    let sitClicked = false;
+    let echoPressed = false, echoClicked = false;
+    const chairForward = new T.Vector3(0, 0, 1).applyQuaternion(chair.quaternion);
+    const chairSide = new T.Vector3(1, 0, 0).applyQuaternion(chair.quaternion);
+    function walkToDesk() {
+      if (seating.active || carrying || falling) return;
+      const approaches = [-1, 1].map(side => desk.position.clone().addScaledVector(chairForward, -1.5).addScaledVector(chairSide, side * 1.4)).filter(point => walkable(point.x, point.z));
+      sitRoute = findOfficeRoute(character.position, approaches, walkable);
+    }
+    const roomCamera = { yaw: 0.5, pitch: 0.33, zoom: 0.9 };
+    const closeCamera = { yaw: 0.83, pitch: 0.13, zoom: 1.23 };
+    let wideView = false;
+    let inspectedShelf: ShelfFocusTarget | undefined;
+    let shelfPressed: ShelfFocusTarget | undefined;
+    let shelfClicked: ShelfFocusTarget | undefined;
+    const inspectionPointer = new T.Vector2();
+    const inspectionParallax = new T.Vector2();
+    let inspectionTransition:
+      { elapsed: number; focus: T.Vector3; orbit: T.Vector3 } | undefined;
+    const defaultViewLabel = view.getAttribute("aria-label")!;
+    function inspectShelf(target?: ShelfFocusTarget) {
+      inspectionTransition = reduced.matches
+        ? undefined
+        : {
+            elapsed: 0,
+            focus: cameraFocus.clone(),
+            orbit: cameraOrbit.clone(),
+          };
+      inspectedShelf = target;
+      inspectionPointer.set(0, 0);
+      inspectionParallax.set(0, 0);
+      shelfPicking.setHovered();
+      shelfPressed = shelfClicked = undefined;
+      clearInput();
+      view.style.cursor = target ? "zoom-out" : "";
+      view.setAttribute(
+        "aria-label",
+        target
+          ? `${target.name}. Click anywhere or press Escape to return to the room.`
+          : defaultViewLabel,
+      );
+      if (target) view.dataset.inspecting = target.name;
+      else delete view.dataset.inspecting;
+    }
+    let yaw = closeCamera.yaw,
+      pitch = closeCamera.pitch,
+      zoom = closeCamera.zoom,
+      paused = false,
+      time = 0,
+      previous = 0,
+      frame = 0,
+      sound = false,
+      audio: AudioContext | undefined;
+    let disposed = false,
+      contextLost = false,
+      dragging = false,
+      pointerId: number | undefined,
+      pointerStart = new T.Vector2(),
+      pointerLast = new T.Vector2();
+    const pickRay = new T.Raycaster();
+    pickRay.firstHitOnly = true;
+    let hoverPointer: PointerEvent | undefined;
+    let sceneHitReady = false;
+    let sceneHit: T.Intersection | undefined;
+    const visiblePickMeshes: T.Object3D[] = [];
+    function nearestSceneHit() {
+      if (!sceneHitReady) {
+        scene.updateMatrixWorld(true);
+        visiblePickMeshes.length = 0;
+        scene.traverseVisible(object => {
+          if (object instanceof T.Mesh && !object.userData.shelfHover) visiblePickMeshes.push(object);
+        });
+        sceneHit = pickRay.intersectObjects(visiblePickMeshes, false)[0];
+        sceneHitReady = true;
+      }
+      return sceneHit;
+    }
+    const pickPointer = new T.Vector2();
+    const dragPlane = new T.Plane();
+    const dragHit = new T.Vector3();
+    const collarOffset = new T.Vector3();
+    const carryVelocity = new T.Vector3();
+    const carryAcceleration = new T.Vector3();
+    const localCarryVelocity = new T.Vector3();
+    const hangSway = new T.Vector2();
+    const hangSwayVelocity = new T.Vector2();
+    const heldTarget = new T.Vector3();
+    const dropStart = new T.Vector3();
+    const landing = new T.Vector3();
+    let carrying = false,
+      falling = false,
+      fallTime = 0,
+      fallGravity = 9.8,
+      landingCompression = 0,
+      landingVelocity = 0;
+    function aimPointer(e: PointerEvent) {
+      sceneHitReady = false;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pickPointer.set(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        (-(e.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      camera.updateMatrixWorld();
+      pickRay.setFromCamera(pickPointer, camera);
+    }
+    function updateHeldTarget(e: PointerEvent) {
+      aimPointer(e);
+      if (!pickRay.ray.intersectPlane(dragPlane, dragHit)) return;
+      heldTarget.copy(dragHit).sub(collarOffset);
+      // The neckline follows the pointer; the floor and room edges remain solid.
+      heldTarget.x = T.MathUtils.clamp(heldTarget.x, -3.5, 3.55);
+      heldTarget.z = T.MathUtils.clamp(heldTarget.z, -2.6, 0.05);
+      heldTarget.y = T.MathUtils.clamp(heldTarget.y, 0.3, carryCeiling());
+      constrainCarryToDesk(heldTarget);
+      updateLanding();
+    }
+    function constrainCarryToDesk(position: T.Vector3) {
+      const point = nearestLanding(position.x, position.z, [blockers[0]]);
+      if (!point) return;
+      if (Math.abs(position.x - point.x) > 0.0001) carryVelocity.x = 0;
+      if (Math.abs(position.z - point.z) > 0.0001) carryVelocity.z = 0;
+      position.x = point.x;
+      position.z = point.z;
+    }
+    function carryCeiling() {
+      return movingDesk.position.y + desktop.position.y + desktopSurfaceHeight;
+    }
+    function updateLanding() {
+      const point = nearestLanding(heldTarget.x, heldTarget.z, blockers);
+      if (point) landing.set(point.x, 0, point.z);
+    }
+    function releaseCharacter() {
+      if (!carrying) return;
+      carrying = false;
+      falling = true;
+      fallTime = 0;
+      dropStart.copy(character.position);
+      // Even a quick click gets a small, visible upright drop.
+      dropStart.y = Math.max(0.25, dropStart.y);
+      fallGravity = 9.8 + dropStart.y * 6;
+      character.position.copy(dropStart);
+      keys.clear();
+      joy.set(0, 0);
+      get("[data-thumb]").style.transform = "";
+    }
+    const pausePanel = get("[data-pause]");
+    function tone(frequency: number, duration = 0.4, volume = 0.04, delay = 0) {
+      if (!sound || !audio) return;
+      const oscillator = audio.createOscillator(),
+        gain = audio.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.value = frequency;
+      const now = audio.currentTime + delay;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(volume, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      oscillator.connect(gain).connect(audio.destination);
+      oscillator.start(now);
+      oscillator.stop(now + duration + 0.02);
+    }
+    function clearInput() {
+      sitRoute = undefined;
+      sitPressed = sitClicked = false;
+      echoPressed = echoClicked = false;
+      hoverPointer = undefined;
+      releaseDesk();
+      view.style.cursor = "";
+      releaseCharacter();
+      if (pointerId !== undefined && view.hasPointerCapture(pointerId))
+        view.releasePointerCapture(pointerId);
+      keys.clear();
+      joy.set(0, 0);
+      walking.reset();
+      walkCycle.reset();
+      pointerId = undefined;
+      dragging = false;
+      shelfPressed = shelfClicked = undefined;
+      get("[data-thumb]").style.transform = "";
+    }
+    function setPaused(value: boolean) {
+      paused = value;
+      pausePanel.hidden = !value;
+      clearInput();
+      if (!value) view.focus({ preventScroll: true });
+    }
+    const viewButtons =
+      root.querySelectorAll<HTMLButtonElement>("[data-camera]");
+    for (const button of viewButtons) {
+      button.addEventListener(
+        "click",
+        (event) => {
+          wideView = button.dataset.camera === "wide";
+          yaw = wideView ? roomCamera.yaw : closeCamera.yaw;
+          pitch = wideView ? roomCamera.pitch : closeCamera.pitch;
+          zoom = wideView ? roomCamera.zoom : closeCamera.zoom;
+          get("[data-views]").dataset.views = wideView ? "wide" : "close";
+          for (const option of viewButtons)
+            option.setAttribute("aria-pressed", String(option === button));
+          if (event.detail > 0) view.focus({ preventScroll: true });
+        },
+        { signal },
+      );
+    }
+    get("[data-resume]").addEventListener("click", () => setPaused(false), {
+      signal,
+    });
+    get("[data-sound]").addEventListener(
+      "click",
+      () => {
+        sound = !sound;
+        if (sound) {
+          audio ??= new AudioContext();
+          void audio.resume();
+        }
+        get("[data-sound]").setAttribute("aria-pressed", String(sound));
+        get("[data-sound]").setAttribute(
+          "aria-label",
+          sound ? "Turn sound off" : "Turn sound on",
+        );
+        root
+          .querySelector("[data-sound-off]")
+          ?.toggleAttribute("hidden", sound);
+        root.querySelector<SVGElement>("[data-sound-on]")!.style.display = sound
+          ? ""
+          : "none";
+        if (sound) {
+          tone(330, 0.6, 0.025);
+          tone(440, 0.8, 0.02, 0.12);
+        }
+        view.focus({ preventScroll: true });
+      },
+      { signal },
+    );
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.code === "Escape") {
+          e.preventDefault();
+          if (inspectedShelf) {
+            inspectShelf();
+            return;
+          }
+          setPaused(!paused);
+          return;
+        }
+        if (
+          e.target instanceof HTMLElement &&
+          e.target.closest("button,a,input,textarea,select")
+        )
+          return;
+        if (paused || inspectedShelf) return;
+        if (
+          [
+            "KeyW",
+            "KeyA",
+            "KeyS",
+            "KeyD",
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "ShiftLeft",
+            "ShiftRight",
+          ].includes(e.code)
+        ) {
+          e.preventDefault();
+          sitRoute = undefined;
+          if (!e.repeat && !keys.has(e.code) && !e.code.startsWith("Shift"))
+            seating.requestExit();
+          keys.add(e.code);
+        }
+      },
+      { signal },
+    );
+    window.addEventListener("keyup", (e) => keys.delete(e.code), { signal });
+    window.addEventListener("blur", clearInput, { signal });
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        clearInput();
+        previous = 0;
+        if (document.hidden) audio?.suspend();
+        else if (sound) void audio?.resume();
+      },
+      { signal },
+    );
+    function pickDeskButton() {
+      scene.updateMatrixWorld(true);
+      const hit = pickRay.intersectObjects(deskButtons, true)[0];
+      if (!hit) return;
+      const nearest = nearestSceneHit();
+      if (!nearest || hit.distance > nearest.distance + 0.01) return;
+      return deskButtons.find(
+        (button) =>
+          button === hit.object || button.children.includes(hit.object),
+      );
+    }
+    function pickShelfObject() {
+      if (!staticLeftWall.visible) return;
+      return shelfPicking.pick(pickRay, nearestSceneHit);
+    }
+    function hitBelongsTo(roots: T.Object3D[]) {
+      let object: T.Object3D | null = nearestSceneHit()?.object ?? null;
+      while (object) {
+        if (roots.includes(object)) return true;
+        object = object.parent;
+      }
+      return false;
+    }
+    function pickEcho() { return hitBelongsTo([echo]); }
+    function pickSeat() { return hitBelongsTo([chair, desk, movingDesk]); }
+    // Capture the dismissal click so it cannot also activate another control.
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (!inspectedShelf) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        inspectShelf();
+      },
+      { capture: true, signal },
+    );
+    view.addEventListener(
+      "click",
+      () => {
+        if (shelfClicked && !paused) inspectShelf(shelfClicked);
+        else if (echoClicked && !paused) speakToEcho();
+        else if (sitClicked && !paused) walkToDesk();
+        shelfClicked = undefined;
+        sitClicked = false;
+        echoClicked = false;
+      },
+      { signal },
+    );
+    view.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (
+          paused ||
+          inspectedShelf ||
+          e.button !== 0 ||
+          pointerId !== undefined
+        )
+          return;
+        view.focus({ preventScroll: true });
+        pointerId = e.pointerId;
+        hoverPointer = undefined;
+        shelfPicking.setHovered();
+        pointerStart.set(e.clientX, e.clientY);
+        pointerLast.copy(pointerStart);
+        dragging = false;
+        view.setPointerCapture(e.pointerId);
+        aimPointer(e);
+        shelfPressed = pickShelfObject();
+        if (shelfPressed) return;
+        deskPressed = pickDeskButton();
+        if (deskPressed) {
+          deskPressed.position.z = 0.064;
+          return;
+        }
+        echoPressed = pickEcho();
+        if (echoPressed) return;
+        sitPressed = pickSeat();
+        if (sitPressed) return;
+        character.updateMatrixWorld(true);
+        // Skinned geometry changes each frame, so refresh its picking bounds.
+        character.traverse((o) => {
+          if (o instanceof T.SkinnedMesh) {
+            o.computeBoundingSphere();
+            o.computeBoundingBox();
+          }
+        });
+        const hit = pickRay.intersectObject(character, true)[0];
+        if (hit && !seating.active) {
+          carrying = true;
+          falling = false;
+          keys.clear();
+          joy.set(0, 0);
+          walking.reset();
+          walkCycle.reset();
+          get("[data-thumb]").style.transform = "";
+          landingCompression = 0;
+          landingVelocity = 0;
+          carryVelocity.set(0, 0, 0);
+          collarOffset
+            .set(0, 2.18, -0.14)
+            .multiplyScalar(characterScale)
+            .applyAxisAngle(new T.Vector3(0, 1, 0), character.rotation.y);
+          const collar = character.position.clone().add(collarOffset);
+          dragPlane.setFromNormalAndCoplanarPoint(
+            camera.getWorldDirection(new T.Vector3()),
+            collar,
+          );
+          updateHeldTarget(e);
+        }
+      },
+      { signal },
+    );
+    view.addEventListener(
+      "pointermove",
+      (e) => {
+        if (inspectedShelf) {
+          const rect = view.getBoundingClientRect();
+          inspectionPointer.set(
+            T.MathUtils.clamp(
+              ((e.clientX - rect.left) / rect.width) * 2 - 1,
+              -1,
+              1,
+            ),
+            T.MathUtils.clamp(
+              ((e.clientY - rect.top) / rect.height) * 2 - 1,
+              -1,
+              1,
+            ),
+          );
+          return;
+        }
+        if (pointerId === undefined && !paused) {
+          hoverPointer = e;
+          return;
+        }
+        if (e.pointerId !== pointerId) return;
+        if (deskPressed) return;
+        if (carrying) {
+          updateHeldTarget(e);
+          return;
+        }
+        const p = new T.Vector2(e.clientX, e.clientY);
+        if (p.distanceTo(pointerStart) > 6) dragging = true;
+        if (dragging) {
+          const nextYaw = yaw - (p.x - pointerLast.x) * 0.004;
+          yaw = wideView ? T.MathUtils.clamp(nextYaw, -0.22, 0.85) : nextYaw;
+          pitch = T.MathUtils.clamp(
+            pitch + (p.y - pointerLast.y) * 0.003,
+            0.05,
+            0.85,
+          );
+        }
+        pointerLast.copy(p);
+      },
+      { signal },
+    );
+    view.addEventListener(
+      "pointerup",
+      (e) => {
+        if (e.pointerId !== pointerId) return;
+        shelfClicked =
+          !dragging &&
+          Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y) <=
+            6
+            ? shelfPressed
+            : undefined;
+        shelfPressed = undefined;
+        sitClicked = sitPressed && !dragging && Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y) <= 6;
+        sitPressed = false;
+        echoClicked = echoPressed && !dragging && Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y) <= 6;
+        echoPressed = false;
+        releaseDesk();
+        releaseCharacter();
+        pointerId = undefined;
+        dragging = false;
+        if (view.hasPointerCapture(e.pointerId))
+          view.releasePointerCapture(e.pointerId);
+      },
+      { signal },
+    );
+    view.addEventListener("pointercancel", clearInput, { signal });
+    view.addEventListener(
+      "pointerleave",
+      () => {
+        shelfPicking.setHovered();
+        inspectionPointer.set(0, 0);
+        hoverPointer = undefined;
+      },
+      { signal },
+    );
+    view.addEventListener(
+      "lostpointercapture",
+      (e) => {
+        if (e.pointerId === pointerId) clearInput();
+      },
+      { signal },
+    );
+    view.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        if (carrying || falling || inspectedShelf) return;
+        zoom = T.MathUtils.clamp(zoom + e.deltaY * 0.0006, 0.7, 1.3);
+      },
+      { signal, passive: false },
+    );
+    const joystick = get("[data-joystick]"),
+      thumb = get("[data-thumb]");
+    let joyPointer: number | undefined;
+    function moveJoystick(e: PointerEvent) {
+      sitRoute = undefined;
+      const r = joystick.getBoundingClientRect();
+      const dx = e.clientX - r.left - r.width / 2,
+        dy = e.clientY - r.top - r.height / 2;
+      joy
+        .set(dx, dy)
+        .divideScalar(r.width * 0.32)
+        .clampLength(0, 1);
+      thumb.style.transform = `translate(${joy.x * 1.25}rem,${joy.y * 1.25}rem)`;
+    }
+    joystick.addEventListener(
+      "pointerdown",
+      (e) => {
+        joyPointer = e.pointerId;
+        joystick.setPointerCapture(e.pointerId);
+        moveJoystick(e);
+      },
+      { signal },
+    );
+    joystick.addEventListener(
+      "pointermove",
+      (e) => {
+        if (e.pointerId === joyPointer) moveJoystick(e);
+      },
+      { signal },
+    );
+    for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
+      joystick.addEventListener(
+        event,
+        () => {
+          joyPointer = undefined;
+          joy.set(0, 0);
+          thumb.style.transform = "";
+        },
+        { signal },
+      );
+    renderer.domElement.addEventListener(
+      "webglcontextlost",
+      (e) => {
+        e.preventDefault();
+        contextLost = true;
+        clearInput();
+        loading.textContent =
+          "The graphics connection paused. Reload to return to your office.";
+        loading.hidden = false;
+      },
+      { signal },
+    );
+    let width = 0,
+      height = 0;
+    function resize() {
+      width = view.clientWidth;
+      height = view.clientHeight;
+      const pixelRatio = Math.min(devicePixelRatio, 2);
+      if (renderer.getPixelRatio() !== pixelRatio) {
+        renderer.setPixelRatio(pixelRatio);
+        composer.setPixelRatio(pixelRatio);
+      }
+      renderer.setSize(width, height);
+      composer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(view);
+    resize();
+    const cameraFocus = new T.Vector3(),
+      cameraOrbit = new T.Vector3(yaw, pitch, 0),
+      targetOrbit = new T.Vector3();
+    function updateCamera(dt: number) {
+      if (carrying || falling) return;
+      const mobile = width < 768;
+      const focus = inspectedShelf
+        ? inspectedShelf.center
+        : wideView
+          ? new T.Vector3(0, 1.5, -1.35)
+          : new T.Vector3(
+              character.position.x * 0.8,
+              1.6,
+              character.position.z * 0.7,
+            );
+      const blend = reduced.matches ? 1 : 1 - Math.exp(-dt * 7);
+      const distance = inspectedShelf
+        ? shelfFocusDistance(inspectedShelf, camera) * (mobile ? 1.2 : 1)
+        : (wideView
+            ? Math.max(14.5, 14.5 / camera.aspect)
+            : mobile
+              ? Math.max(8.4, 4.5 / camera.aspect)
+              : 7.7) * zoom;
+      inspectionParallax.lerp(
+        inspectionPointer,
+        reduced.matches ? 1 : 1 - Math.exp(-dt * 5),
+      );
+      const targetYaw = inspectedShelf
+        ? inspectedShelf.yaw +
+          (reduced.matches ? 0 : inspectionParallax.x * 0.12)
+        : yaw;
+      targetOrbit.set(
+        targetYaw,
+        inspectedShelf
+          ? inspectedShelf.pitch -
+              (reduced.matches ? 0 : inspectionParallax.y * 0.06)
+          : pitch,
+        distance,
+      );
+      if (inspectionTransition) {
+        inspectionTransition.elapsed += dt;
+        const progress = Math.min(1, inspectionTransition.elapsed / 1.8);
+        const ease = T.MathUtils.smootherstep(progress, 0, 1);
+        targetOrbit.x =
+          inspectionTransition.orbit.x +
+          Math.atan2(
+            Math.sin(targetYaw - inspectionTransition.orbit.x),
+            Math.cos(targetYaw - inspectionTransition.orbit.x),
+          );
+        cameraFocus.lerpVectors(inspectionTransition.focus, focus, ease);
+        cameraOrbit.lerpVectors(inspectionTransition.orbit, targetOrbit, ease);
+        if (progress === 1) inspectionTransition = undefined;
+      } else if (cameraOrbit.z === 0) {
+        cameraFocus.copy(focus);
+        cameraOrbit.copy(targetOrbit);
+      } else {
+        cameraFocus.lerp(focus, blend);
+        targetOrbit.x =
+          cameraOrbit.x +
+          Math.atan2(
+            Math.sin(targetYaw - cameraOrbit.x),
+            Math.cos(targetYaw - cameraOrbit.x),
+          );
+        cameraOrbit.lerp(targetOrbit, blend);
+      }
+      camera.position.set(
+        Math.sin(cameraOrbit.x) * Math.cos(cameraOrbit.y) * cameraOrbit.z +
+          cameraFocus.x,
+        Math.sin(cameraOrbit.y) * cameraOrbit.z + cameraFocus.y,
+        Math.cos(cameraOrbit.x) * Math.cos(cameraOrbit.y) * cameraOrbit.z +
+          cameraFocus.z,
+      );
+      camera.lookAt(cameraFocus);
+    }
+    cameraFocus.set(0, 1.5, -1.35);
+    updateCamera(1);
+    const movementInput = new T.Vector2();
+    const verticalAxis = new T.Vector3(0, 1, 0);
+    function animate(now: number) {
+      if (disposed) return;
+      frame = requestAnimationFrame(animate);
+      if (document.hidden || contextLost) {
+        previous = now;
+        return;
+      }
+      const dt = Math.min((now - previous) / 1000 || 0.016, 0.04);
+      previous = now;
+      if (!paused) time += dt;
+      if (!paused && !reduced.matches) windowLandscape.update(time);
+      if (!paused) {
+        if (deskPressed) {
+          desktop.position.y = T.MathUtils.clamp(
+            desktop.position.y +
+              deskPressed.userData.direction * deskSpeed * dt,
+            deskMin,
+            deskMax,
+          );
+        }
+        const horizontal =
+          Number(keys.has("KeyD") || keys.has("ArrowRight")) -
+          Number(keys.has("KeyA") || keys.has("ArrowLeft")) +
+          joy.x;
+        const vertical =
+          Number(keys.has("KeyS") || keys.has("ArrowDown")) -
+          Number(keys.has("KeyW") || keys.has("ArrowUp")) +
+          joy.y;
+        const input = movementInput.set(
+          horizontal * Math.cos(yaw) + vertical * Math.sin(yaw),
+          -horizontal * Math.sin(yaw) + vertical * Math.cos(yaw),
+        );
+        input.clampLength(0, 1);
+        if (sitRoute) {
+          while (sitRoute.length && Math.hypot(sitRoute[0].x-character.position.x, sitRoute[0].y-character.position.z)<.12) sitRoute.shift();
+          if (sitRoute.length) input.set(sitRoute[0].x-character.position.x,sitRoute[0].y-character.position.z).normalize();
+          else input.set(chairForward.x, chairForward.z);
+        }
+        const airborne = carrying || falling;
+        if (airborne) input.set(0, 0);
+        const chairMotion = seating.update(
+          dt,
+          input,
+          !airborne && !inspectedShelf && Math.abs(landingCompression) < 0.01,
+        );
+        if (view.dataset.chairState !== seating.stage) view.dataset.chairState = seating.stage;
+        if (chairMotion.active) sitRoute = undefined;
+        blockers[1].x = chair.position.x;
+        blockers[1].z = chair.position.z;
+        if (airborne || chairMotion.active) walking.reset();
+        if (chairMotion.active) input.set(0, 0);
+        if (carrying) {
+          const ceiling = carryCeiling();
+          heldTarget.y = Math.min(heldTarget.y, ceiling);
+          // Small substeps keep the damped spring stable on slower devices.
+          const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+          const step = dt / steps;
+          for (let i = 0; i < steps; i++) {
+            carryAcceleration
+              .copy(heldTarget)
+              .sub(character.position)
+              .multiplyScalar(400)
+              .addScaledVector(carryVelocity, -32);
+            carryVelocity.addScaledVector(carryAcceleration, step);
+            character.position.addScaledVector(carryVelocity, step);
+            constrainCarryToDesk(character.position);
+            if (character.position.y >= ceiling) {
+              character.position.y = ceiling;
+              carryVelocity.y = Math.min(0, carryVelocity.y);
+            }
+            localCarryVelocity
+              .copy(carryVelocity)
+              .applyAxisAngle(verticalAxis, -character.rotation.y);
+            const pitchTarget = T.MathUtils.clamp(
+              localCarryVelocity.z * 0.09,
+              -0.24,
+              0.24,
+            );
+            const rollTarget = T.MathUtils.clamp(
+              -localCarryVelocity.x * 0.09,
+              -0.28,
+              0.28,
+            );
+            hangSwayVelocity.x +=
+              ((pitchTarget - hangSway.x) * 48 - hangSwayVelocity.x * 7) * step;
+            hangSwayVelocity.y +=
+              ((rollTarget - hangSway.y) * 48 - hangSwayVelocity.y * 7) * step;
+            hangSway.addScaledVector(hangSwayVelocity, step);
+          }
+          character.position.y = Math.max(0.25, character.position.y);
+        } else if (falling) {
+          fallTime += dt;
+          const duration = Math.sqrt((2 * dropStart.y) / fallGravity);
+          const progress = Math.min(1, fallTime / duration);
+          // Clear furniture horizontally before the feet reach the floor.
+          const slide = T.MathUtils.smoothstep(progress, 0, 0.7);
+          character.position.x = T.MathUtils.lerp(
+            dropStart.x,
+            landing.x,
+            slide,
+          );
+          character.position.z = T.MathUtils.lerp(
+            dropStart.z,
+            landing.z,
+            slide,
+          );
+          character.position.y = Math.max(
+            0,
+            dropStart.y - 0.5 * fallGravity * fallTime ** 2,
+          );
+          if (progress === 1) {
+            character.position.copy(landing);
+            landingCompression = 0;
+            const impactSpeed = Math.sqrt(2 * fallGravity * dropStart.y);
+            landingVelocity = Math.min(
+              5.5,
+              impactSpeed * (0.2 + impactSpeed * 0.06),
+            );
+            falling = false;
+            hangSway.set(0, 0);
+            hangSwayVelocity.set(0, 0);
+            walkCycle.reset();
+          }
+        }
+        if (
+          !carrying &&
+          !falling &&
+          !chairMotion.active &&
+          (Math.abs(landingCompression) > 0.0001 ||
+            Math.abs(landingVelocity) > 0.001)
+        ) {
+          const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
+          const step = dt / steps;
+          for (let i = 0; i < steps; i++) {
+            landingVelocity +=
+              (-145 * landingCompression - 12 * landingVelocity) * step;
+            landingCompression += landingVelocity * step;
+          }
+          if (
+            Math.abs(landingCompression) < 0.0001 &&
+            Math.abs(landingVelocity) < 0.001
+          ) {
+            landingCompression = 0;
+            landingVelocity = 0;
+          }
+          // Compression bends the knees; the small rebound lifts the whole body.
+          character.position.y = Math.max(0, -landingCompression);
+        }
+        const speed =
+          keys.has("ShiftLeft") || keys.has("ShiftRight") ? WALK_SPEED * 1.3 : WALK_SPEED;
+        if (!sitRoute) chairAvoidance.update(character.position, input, dt);
+        walking.update(input, speed, dt);
+        // Other furniture and room edges stop the full step. Only the chair
+        // permits sliding along a blocked axis while following its detour.
+        const blockedByOtherObject = !chairMotion.active && !clearsOtherObjects(
+          character.position.x + velocity.x * dt,
+          character.position.z + velocity.y * dt,
+        );
+        if (blockedByOtherObject) {
+          walking.reset();
+          walkCycle.stop();
+        }
+        let moved = 0;
+        let movedX = 0, movedZ = 0;
+        for (const axis of chairMotion.active ? [] : (["x", "z"] as const)) {
+          const amount = (axis === "x" ? velocity.x : velocity.y) * dt;
+          const x = character.position.x + (axis === "x" ? amount : 0),
+            z = character.position.z + (axis === "z" ? amount : 0);
+          if (walkable(x, z)) {
+            character.position[axis] += amount;
+            if (axis === "x") movedX = amount;
+            else movedZ = amount;
+            moved += amount * amount;
+          }
+        }
+        moved = Math.sqrt(moved);
+        if (!chairMotion.active && !airborne) {
+          character.rotation.y = walking.face(character.rotation.y, movedX, movedZ, dt);
+        }
+        const gait = walkCycle.update(
+          (chairMotion.active ? chairMotion.distance : moved) / characterScale,
+          dt,
+          chairMotion.active ? chairMotion.walking : input.lengthSq() > 0.0001,
+        );
+        characterAnimator.update({
+          time,
+          ...gait,
+          suspended: carrying
+            ? 1
+            : falling
+              ? T.MathUtils.smoothstep(character.position.y, 0.25, 0.8)
+              : 0,
+          landingCompression: carrying || falling ? 0 : landingCompression,
+          hangPitch: hangSway.x,
+          hangRoll: hangSway.y,
+          reduced: reduced.matches,
+          chairPose: chairMotion.pose ? {
+            ...chairMotion.pose,
+            seatHeight: chairMotion.pose.seatHeight / characterScale,
+            footForward: chairMotion.pose.footForward / characterScale,
+            footLift: chairMotion.pose.footLift / characterScale,
+          } : undefined,
+        });
+      }
+      updateCamera(dt);
+      updateWallCutaway();
+      if (hoverPointer && pointerId === undefined && !paused && !inspectedShelf) {
+        aimPointer(hoverPointer);
+        hoverPointer = undefined;
+        const hovered = pickShelfObject();
+        shelfPicking.setHovered(hovered);
+        const cursor = hovered ? "zoom-in" : pickDeskButton() || pickEcho() || pickSeat() ? "pointer" : "";
+        if (view.style.cursor !== cursor) view.style.cursor = cursor;
+      }
+      shelfPicking.update(dt, reduced.matches, staticLeftWall.visible);
+      leafMotion.update(dt, !paused && !reduced.matches && !dragging);
+      windowWalkTarget.set(0, 0, 0);
+      if (!wideView && !inspectedShelf && !reduced.matches) {
+        windowWalkTarget.set(character.position.x + 1.55, 0, character.position.z + 0.8).multiplyScalar(1.5);
+      }
+      windowWalkParallax.lerp(windowWalkTarget, 1 - Math.exp(-dt * 6));
+      windowGroup.worldToLocal(windowEye.copy(camera.position).add(windowWalkParallax));
+      windowEye.z -= 0.012;
+      windowLandscape.updateView(
+        windowEye,
+        windowOpening.width,
+        windowOpening.height,
+      );
+      const command = echoCommand.update(paused ? 0 : dt);
+      if (command.changed) {
+        roomLighting.set(command.on);
+        echoButton.textContent = `Ask Alex to turn the lights ${command.on ? "off" : "on"}`;
+      }
+      roomLighting.update(paused ? 0 : dt);
+      if (command.visible && speechLetters.textContent !== command.text) speechLetters.textContent = command.text;
+      const typing = String(command.visible && command.text.length < (speechSize.textContent?.length ?? 0));
+      if (speech.dataset.typing !== typing) speech.dataset.typing = typing;
+      if (command.visible) {
+        head.getWorldPosition(speechAnchor);
+        speechAnchor.y += .9 * characterScale;
+        speechAnchor.project(camera);
+      }
+      const speechVisible = command.visible && speechAnchor.z <= 1 && speechAnchor.z >= -1;
+      if (speech.dataset.visible !== String(speechVisible)) speech.dataset.visible = String(speechVisible);
+      if (speechVisible) {
+        const width = view.clientWidth, height = view.clientHeight;
+        const half = speech.offsetWidth / 2 + 12;
+        speech.style.left = `${T.MathUtils.clamp((speechAnchor.x * .5 + .5) * width, half, width - half) / width * 100}%`;
+        speech.style.top = `${T.MathUtils.clamp((-.5 * speechAnchor.y + .5) * height - 12, speech.offsetHeight + 16, height - 24) / height * 100}%`;
+      }
+      renderer.shadowMap.needsUpdate = true;
+      composer.render();
+
+    }
+    function dispose() {
+      if (disposed) return;
+      disposed = true;
+      abort.abort();
+      cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      audio?.close();
+      const geometries = new Set<T.BufferGeometry>(),
+        materials = new Set<T.Material>(),
+        textures = new Set<T.Texture>();
+      scene.traverse((o) => {
+        if (o instanceof T.Mesh) {
+          geometries.add(o.geometry);
+          (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) =>
+            materials.add(m),
+          );
+        }
+      });
+      materials.forEach((m) => {
+        Object.values(m).forEach((v) => {
+          if (v instanceof T.Texture) textures.add(v);
+        });
+        m.dispose();
+      });
+      textures.forEach((t) => t.dispose());
+      geometries.forEach((g) => g.dispose());
+      environmentTarget.dispose();
+      composer.passes.forEach((p) => p.dispose());
+      composer.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+    }
+    document.addEventListener("astro:before-swap", dispose, {
+      once: true,
+      signal,
+    });
+    window.addEventListener(
+      "pagehide",
+      (e) => {
+        if (!e.persisted) dispose();
+      },
+      { signal },
+    );
+    await renderer.compileAsync(scene, camera);
+    if (disposed) return;
+    setLoadingProgress(100, "Welcome in.");
+    frame = requestAnimationFrame(animate);
+    const reveal = loading.animate([{ opacity: 1 }, { opacity: 0 }], { duration: reduced.matches ? 0 : 400, easing: "ease-out" });
+    void reveal.finished.then(() => { loading.hidden = true; }).catch(() => {});
+  }
+</script>

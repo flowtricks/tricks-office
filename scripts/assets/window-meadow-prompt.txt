@@ -1,0 +1,7 @@
+Generated with the built-in image_gen tool.
+
+Use case: photorealistic-natural
+Asset type: background texture seen through a narrow tall window in a realistic 3D office.
+Primary request: a natural meadow and pale blue-gray sky, convincingly photographic with subdued colors.
+Composition: portrait 1:2 aspect ratio. Upper 59 percent is open empty cloudless sky; lower 41 percent is meadow. Eye-level view across a large open grass field. A very gently uneven distant grassy rise forms the horizon at approximately 59 percent from the top, with atmospheric distance, no straight graphic dividing line. No mountains, trees, buildings or objects. Foreground grass at the bottom is fine and dense, irregular mixed short meadow grasses, mostly soft olive and gray sage with scattered dry straw-colored blades. Finer blended grass toward the horizon, natural patchy variation and depth, no obvious repetitive pattern.
+Lighting: soft neutral daylight, realistic restrained contrast. Sky muted blue-gray at top fading continuously to pale warm gray near the horizon. Natural greens with low saturation, no vivid lime or emerald. Real photograph, no illustration, no CGI, no smooth synthetic turf, no exaggerated individual blades, no horizon glow stripe, no text, no frame, no window, no clouds; moving clouds will be composited separately.

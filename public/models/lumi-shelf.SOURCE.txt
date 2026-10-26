@@ -1,0 +1,5 @@
+Lumi shelf figurine
+Source: ../lumos-docs/src/assets/lumi/lumi.glb, the user's Lumi model used by SiteFooter/LumiGame.
+Original model metadata identifies the source as the user-supplied lumi-print.3mf.
+Copied without geometry changes. Display colors follow lumos-docs/src/lib/lumi/character.ts
+and hat.ts. Scaled and positioned as a static office shelf figurine.

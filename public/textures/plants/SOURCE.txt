@@ -1,0 +1,12 @@
+Leaf color and normal maps: Poly Haven, Potted Plant 02.
+https://polyhaven.com/a/potted_plant_02
+https://polyhaven.com/license
+License: CC0 1.0 Universal (public domain).
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Original 1K JPEG maps downloaded 2026-10-26 via the public Poly Haven API.
+Powered by Poly Haven: https://polyhaven.com
+
+The application uses a region of the leaf atlas on new curved leaf geometry.
+Plant arrangements, pots, stems, lamp geometry and filament geometry are
+original code modeled to the user's supplied office photograph.

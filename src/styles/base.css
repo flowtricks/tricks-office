@@ -27,7 +27,7 @@
   --line-height-huge: 1.5;
 
   /* Borders & focus */
-  --border-width: 0.0625rem;
+  --border-width: 0rem;
   --focus-width: 0.125rem;
   --focus-offset: 0.1827rem;
   --focus-offset-inner: calc(var(--focus-width) * -1);
@@ -255,7 +255,7 @@
   --button-border-hover: var(--button-background-hover);
   --button-text-hover: var(--background);
 
-  --button-2-background: transparent;
+  --button-2-background: var(--background-2);
   --button-2-border: var(--border);
   --button-2-text: var(--text);
   --button-2-background-hover: var(--text);
@@ -291,7 +291,7 @@
   --button-border-hover: var(--button-background-hover);
   --button-text-hover: var(--background);
 
-  --button-2-background: transparent;
+  --button-2-background: var(--background-2);
   --button-2-border: var(--border);
   --button-2-text: var(--text);
   --button-2-background-hover: var(--text);
@@ -326,7 +326,7 @@
   --button-border-hover: var(--button-background-hover);
   --button-text-hover: var(--dark-900);
 
-  --button-2-background: transparent;
+  --button-2-background: var(--background-2);
   --button-2-border: var(--border);
   --button-2-text: var(--text);
   --button-2-background-hover: var(--light-100);

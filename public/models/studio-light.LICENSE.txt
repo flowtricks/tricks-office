@@ -1,0 +1,13 @@
+Source: Studio softbox, Innerscene 3D Parts Library
+https://www.innerscene.com/tools/library/3d-parts/studio-softbox-6e3c1491
+Download: https://www.innerscene.com/api/library/studio-softbox-6e3c1491/download
+Retrieved: 2026-10-26
+License: CC0 1.0 public domain dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+studio-light-stand.glb contains the source tripod, locks, feet, tubes, spigot,
+and tilt bracket, extracted and optimized with scripts/prepare-studio-light.mjs.
+The dome, ribs, diffusion fabric, amaran-style lamp housing, cable and labels
+are custom additions in src/scripts/studio-light.ts based on user photos.
+Aputure Light Dome SE and amaran 100d S branding identifies the depicted
+real-world equipment; this is not an official manufacturer model.

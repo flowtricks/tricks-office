@@ -1,0 +1,8 @@
+Ergonomic mesh office chair by guillaumecrz
+https://sketchfab.com/3d-models/ergonomic-mesh-office-chair-cd5ef0305d8545dd8cd934ebb99cf7d5
+Licensed under Creative Commons Attribution 4.0:
+https://creativecommons.org/licenses/by/4.0/
+Downloaded as GLB from the creator's Sketchfab download on 2026-10-26.
+Adaptations: white frame, black seat and arm pads, gray woven mesh, chrome base,
+smaller base footprint, scene scaling and placement. Original rear support design differs
+from the user's physical chair. Material adaptations in src/scripts/office-chair.ts.

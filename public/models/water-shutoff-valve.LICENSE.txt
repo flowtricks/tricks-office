@@ -1,0 +1,6 @@
+Ball valve – original MEP CAD, Innerscene
+Source: https://www.innerscene.com/tools/library/3d-parts/ball-valve-original-mep-cad-75e8b0f7
+License: CC0 (public domain)
+Converted from STEP to GLB. Removed industrial flanges/internal parts, adjusted lever offset,
+painted charcoal, and mounted vertically with pipes in the office access panel.
+Conversion: scripts/prepare-water-valve.mjs

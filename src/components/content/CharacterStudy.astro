@@ -1,0 +1,341 @@
+---
+interface Props {
+  /** Render the character study. Default: true. */
+  render?: boolean;
+}
+const { render = true } = Astro.props;
+---
+
+{
+  render && (
+    <section class="character_study_wrap" aria-label="Character model study">
+      <figure class="character_study_reference">
+        <img
+          src="/reference/character-cutout.png"
+          alt="Original character reference: swept brown hair, black glasses, chestnut shirt, charcoal trousers and cream sneakers."
+        />
+        <figcaption>Original reference</figcaption>
+      </figure>
+      <div class="character_study_stage">
+        <div class="character_study_canvas" data-character-canvas />
+        <header>
+          <>
+            <span>Character study</span>
+            <a href="/">Back to office</a>
+          </>
+        </header>
+        <p class="character_study_status" data-character-status role="status">
+          Loading model…
+        </p>
+        <footer>
+          <nav aria-label="Character views">
+            <button type="button" data-view="front">
+              Front
+            </button>
+            <button type="button" data-view="three-quarter" aria-pressed="true">
+              ¾ view
+            </button>
+            <button type="button" data-view="side">
+              Side
+            </button>
+            <button type="button" data-view="back">
+              Back
+            </button>
+            <button type="button" data-view="face">
+              Face
+            </button>
+          </nav>
+          <button type="button" data-walk-preview aria-pressed="false">
+            Preview walk
+          </button>
+          <button type="button" data-blink-preview>
+            Preview blink
+          </button>
+          <span>Drag to rotate · Scroll to zoom</span>
+        </footer>
+      </div>
+    </section>
+  )
+}
+<style>
+  @layer components {
+    .character_study_wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      height: 100svh;
+      background: #292820;
+      color: #e9dfca;
+    }
+    .character_study_reference {
+      position: relative;
+      margin: 0;
+      min-height: 0;
+      background: #191a16;
+      overflow: hidden;
+    }
+    .character_study_reference img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .character_study_reference figcaption {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.35rem;
+      background: #1a1917b8;
+      font-size: 0.8rem;
+    }
+    .character_study_stage {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+    }
+    .character_study_canvas {
+      position: absolute;
+      inset: 0;
+    }
+    .character_study_canvas :global(canvas) {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    .character_study_stage header {
+      position: absolute;
+      top: 1.4rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    .character_study_stage a {
+      pointer-events: auto;
+      color: inherit;
+      opacity: 0.65;
+    }
+    .character_study_stage footer {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 1rem;
+      right: 1rem;
+      display: grid;
+      justify-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+    }
+    .character_study_stage nav {
+      display: flex;
+      gap: 0.25rem;
+      padding: 0.3rem;
+      border: 0;
+      border-radius: 2rem;
+      background: #24251ee0;
+    }
+    .character_study_stage button {
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      padding: 0.5rem 0.85rem;
+      font: inherit;
+      border-radius: 2rem;
+    }
+    .character_study_stage button[aria-pressed="true"] {
+      background: #e9dfca;
+      color: #292820;
+    }
+    .character_study_stage button:focus-visible {
+      outline: 0.125rem solid #e6bc76;
+      outline-offset: 0.2rem;
+    }
+    .character_study_stage footer > span {
+      opacity: 0.6;
+    }
+    .character_study_status {
+      position: absolute;
+      top: 48%;
+      width: 100%;
+      text-align: center;
+    }
+    @media (max-width: 45rem) {
+      .character_study_wrap {
+        grid-template-columns: 1fr;
+      }
+      .character_study_reference {
+        position: absolute;
+        z-index: 2;
+        bottom: 6.5rem;
+        left: 1rem;
+        width: 6rem;
+        height: 9rem;
+        border-radius: 0.4rem;
+      }
+      .character_study_reference figcaption {
+        display: none;
+      }
+    }
+  }
+</style>
+<script>
+  import * as T from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+  import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+  import {
+    createCharacterAnimator,
+    WALK_SPEED,
+    WALK_CYCLE_DISTANCE,
+  } from "@/scripts/character-animation";
+  import { prepareCharacter } from "@/scripts/character-materials";
+
+  const host = document.querySelector<HTMLElement>("[data-character-canvas]");
+  if (host) {
+    const scene = new T.Scene();
+    scene.background = new T.Color("#292b25");
+    const renderer = new T.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = T.PCFShadowMap;
+    renderer.toneMapping = T.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+    host.append(renderer.domElement);
+    const camera = new T.PerspectiveCamera(32, 1, 0.05, 100);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.65, 0);
+    controls.enableDamping = true;
+    controls.minDistance = 1.4;
+    controls.maxDistance = 12;
+    controls.maxPolarAngle = Math.PI * 0.53;
+    const pmrem = new T.PMREMGenerator(renderer);
+    const room = new RoomEnvironment();
+    const environment = pmrem.fromScene(room, 0.04);
+    scene.environment = environment.texture;
+    scene.environmentIntensity = 0.45;
+    room.dispose();
+    pmrem.dispose();
+    scene.add(new T.HemisphereLight(0xffe8ce, 0x393829, 0.4));
+    const key = new T.DirectionalLight(0xffdcad, 1.8);
+    key.position.set(-3, 5, 4);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.left = -3;
+    key.shadow.camera.right = 3;
+    key.shadow.camera.top = 5;
+    key.shadow.camera.bottom = -2;
+    key.shadow.normalBias = 0.003;
+    key.shadow.bias = -0.00005;
+    scene.add(key);
+    const fill = new T.DirectionalLight(0xe3e8e2, 0.3);
+    fill.position.set(3, 3, 2);
+    scene.add(fill);
+    const rim = new T.DirectionalLight(0xffd099, 0.8);
+    rim.position.set(2, 4, -3);
+    scene.add(rim);
+    const floor = new T.Mesh(
+      new T.PlaneGeometry(200, 200),
+      new T.ShadowMaterial({ color: "#070905", opacity: 0.22 }),
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.018;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    const resize = new ResizeObserver(() => {
+      renderer.setSize(host.clientWidth, host.clientHeight);
+      camera.aspect = host.clientWidth / host.clientHeight;
+      camera.updateProjectionMatrix();
+    });
+    resize.observe(host);
+    const setView = (view: string) => {
+      const narrow = host.clientWidth / host.clientHeight < 0.6;
+      const distance = narrow ? 8 : 7;
+      controls.target.set(0, view === "face" ? 2.72 : 1.65, 0);
+      const yaw =
+        view === "side"
+          ? Math.PI / 2
+          : view === "back"
+            ? Math.PI
+            : view === "front" || view === "face"
+              ? 0
+              : 0.24;
+      const d = view === "face" ? 2.5 : distance;
+      camera.position.set(
+        Math.sin(yaw) * d,
+        view === "face" ? 2.76 : 2.25,
+        Math.cos(yaw) * d,
+      );
+      controls.update();
+      document
+        .querySelectorAll<HTMLButtonElement>("[data-view]")
+        .forEach((button) =>
+          button.setAttribute(
+            "aria-pressed",
+            String(button.dataset.view === view),
+          ),
+        );
+    };
+    setView("three-quarter");
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-view]")
+      .forEach((button) =>
+        button.addEventListener("click", () => setView(button.dataset.view!)),
+      );
+    let animator: ReturnType<typeof createCharacterAnimator> | undefined;
+    let walking = false;
+    document
+      .querySelector<HTMLButtonElement>("[data-walk-preview]")
+      ?.addEventListener("click", (event) => {
+        walking = !walking;
+        const button = event.currentTarget as HTMLButtonElement;
+        button.setAttribute("aria-pressed", String(walking));
+        button.textContent = walking ? "Stop walking" : "Preview walk";
+      });
+    document
+      .querySelector<HTMLButtonElement>("[data-blink-preview]")
+      ?.addEventListener("click", () => animator?.blink(1));
+    const status = document.querySelector<HTMLElement>(
+      "[data-character-status]",
+    )!;
+    new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(
+      "/models/reference-character.glb",
+      (gltf) => {
+        prepareCharacter(gltf.scene);
+        animator = createCharacterAnimator(gltf.scene);
+        scene.add(gltf.scene);
+        status.hidden = true;
+      },
+      undefined,
+      (error) => {
+        console.error(error);
+        status.textContent = "The model could not load. Please refresh.";
+      },
+    );
+    let previewPhase = 0,
+      previewTime = 0;
+    renderer.setAnimationLoop((timestamp) => {
+      const now = timestamp / 1000;
+      const dt = Math.min(0.05, now - (previewTime || now));
+      previewTime = now;
+      if (walking)
+        previewPhase += (dt * WALK_SPEED * Math.PI * 2) / WALK_CYCLE_DISTANCE;
+      animator?.update({
+        time: now,
+        phase: previewPhase,
+        stride: walking ? 1 : 0,
+      });
+      controls.update();
+      renderer.render(scene, camera);
+    });
+    window.addEventListener("pagehide", () => {
+      renderer.setAnimationLoop(null);
+      controls.dispose();
+      resize.disconnect();
+      renderer.dispose();
+      environment.dispose();
+    });
+  }
+</script>

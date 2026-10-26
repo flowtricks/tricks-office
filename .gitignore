@@ -16,6 +16,8 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+.env.*
+!.env.example
 
 # macOS-specific files
 .DS_Store
@@ -25,3 +27,9 @@ pnpm-debug.log*
 
 # local agent settings
 .claude/settings.local.json
+
+# Local modeling sources (runtime assets live in public/)
+scripts/*.blend
+scripts/*.blend1
+scripts/assets/*-source.glb
+scripts/assets/*.step
