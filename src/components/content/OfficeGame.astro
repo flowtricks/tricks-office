@@ -517,6 +517,7 @@ const { render = true } = Astro.props;
     createWalkCycle,
     WALK_SPEED,
   } from "@/scripts/character-animation";
+  import { isAppleTouchDevice, officePixelRatio, officeRenderSupport } from "@/scripts/office-render-support";
   import { prepareOfficeChair } from "@/scripts/office-chair";
   import {
     clearsOfficeChair,
@@ -628,10 +629,12 @@ const { render = true } = Astro.props;
     const signal = abort.signal;
     const compact = matchMedia("(max-width: 48rem)").matches;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const appleTouch = isAppleTouchDevice(navigator.userAgent, navigator.maxTouchPoints);
     let renderer: T.WebGLRenderer;
     try {
       renderer = new T.WebGLRenderer({
-        antialias: true,
+        // The composer provides MSAA/SMAA; a second MSAA backbuffer wastes GPU memory.
+        antialias: false,
         powerPreference: "high-performance",
       });
     } catch {
@@ -639,7 +642,7 @@ const { render = true } = Astro.props;
         "This little office needs WebGL. Try opening it in a browser with hardware acceleration.";
       return;
     }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(officePixelRatio(view.clientWidth, view.clientHeight, devicePixelRatio, appleTouch));
     renderer.shadowMap.enabled = true;
     // The beauty and AO passes share the same shadow maps within each frame.
     renderer.shadowMap.autoUpdate = false;
@@ -654,7 +657,7 @@ const { render = true } = Astro.props;
     const camera = new T.PerspectiveCamera(36, 1, 0.1, 80);
     const pmrem = new T.PMREMGenerator(renderer);
     const environment = new RoomEnvironment();
-    const environmentTarget = pmrem.fromScene(environment, 0.04);
+    let environmentTarget = pmrem.fromScene(environment, 0.04);
     scene.environment = environmentTarget.texture;
     scene.environmentIntensity = 0.25;
     environment.dispose();
@@ -1630,10 +1633,8 @@ const { render = true } = Astro.props;
       leafMotion.setShelfVisible(staticLeftWall.visible);
     }
 
-    const targetRender = new T.WebGLRenderTarget(1, 1, {
-      type: T.HalfFloatType,
-      samples: Math.min(4, renderer.capabilities.maxSamples),
-    });
+    const renderSupport = officeRenderSupport(renderer, appleTouch);
+    const targetRender = new T.WebGLRenderTarget(1, 1, renderSupport);
     const composer = new EffectComposer(renderer, targetRender);
     composer.addPass(new RenderPass(scene, camera));
     const ao = compact ? null : new GTAOPass(scene, camera, 1, 1);
@@ -1648,6 +1649,9 @@ const { render = true } = Astro.props;
       composer.addPass(ao);
     }
     const bloom = new UnrealBloomPass(new T.Vector2(1, 1), 0.07, 0.65, 1.8);
+    for (const target of [bloom.renderTargetBright, ...bloom.renderTargetsHorizontal, ...bloom.renderTargetsVertical]) {
+      target.texture.type = renderSupport.type;
+    }
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
     // Smooth the final image as well as geometry edges, including bloom and AO.
@@ -2244,18 +2248,40 @@ const { render = true } = Astro.props;
         e.preventDefault();
         contextLost = true;
         clearInput();
-        loading.textContent =
-          "The graphics connection paused. Reload to return to your office.";
+        loading.getAnimations().forEach(animation => animation.cancel());
+        loadingLabel.textContent = "Reconnecting to your office…";
         loading.hidden = false;
       },
       { signal },
     );
+    renderer.domElement.addEventListener("webglcontextrestored", () => {
+      if (disposed) return;
+      // Three rebuilds scene resources; regenerate the environment's GPU-only pixels.
+      const restoredPMREM = new T.PMREMGenerator(renderer);
+      const restoredRoom = new RoomEnvironment();
+      environmentTarget.dispose();
+      environmentTarget = restoredPMREM.fromScene(restoredRoom, 0.04);
+      scene.environment = environmentTarget.texture;
+      restoredRoom.dispose();
+      restoredPMREM.dispose();
+      composer.renderTarget1.samples = composer.renderTarget2.samples = 0;
+      composer.renderTarget1.dispose();
+      composer.renderTarget2.dispose();
+      resize();
+      contextLost = false;
+      previous = performance.now();
+      renderer.shadowMap.needsUpdate = true;
+      composer.render();
+      loading.hidden = true;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(animate);
+    }, { signal });
     let width = 0,
       height = 0;
     function resize() {
-      width = view.clientWidth;
-      height = view.clientHeight;
-      const pixelRatio = Math.min(devicePixelRatio, 2);
+      width = Math.max(1, view.clientWidth);
+      height = Math.max(1, view.clientHeight);
+      const pixelRatio = officePixelRatio(width, height, devicePixelRatio, appleTouch);
       if (renderer.getPixelRatio() !== pixelRatio) {
         renderer.setPixelRatio(pixelRatio);
         composer.setPixelRatio(pixelRatio);
@@ -2648,6 +2674,23 @@ const { render = true } = Astro.props;
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("export-branding")) {
       const { addBrandingExports } = await import("../../../scripts/export-office-branding");
       addBrandingExports(scene, camera, renderer, composer);
+    }
+    // Compile/render the post-processing chain too before removing the loader.
+    // Scene-only compileAsync does not validate its offscreen framebuffers.
+    renderer.shadowMap.needsUpdate = true;
+    composer.render();
+    const gl = renderer.getContext();
+    if (contextLost || gl.isContextLost()) return;
+    if (gl.getError() !== gl.NO_ERROR) {
+      // Retry without multisample resolves, retaining bloom, tone mapping and SMAA.
+      composer.renderTarget1.samples = composer.renderTarget2.samples = 0;
+      composer.renderTarget1.dispose();
+      composer.renderTarget2.dispose();
+      for (let i = 0; i < 16 && gl.getError() !== gl.NO_ERROR; i++) { /* drain startup errors */ }
+      composer.render();
+      if (gl.getError() !== gl.NO_ERROR) {
+        throw new Error("The graphics pipeline could not render its first frame.");
+      }
     }
     setLoadingProgress(100, "Welcome in.");
     frame = requestAnimationFrame(animate);
