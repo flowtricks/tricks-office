@@ -85,7 +85,9 @@ export function createShelfFocusTargets(
   );
   return {
     setHovered(target?: ShelfFocusTarget) {
+      const entered = !!target && target !== hovered;
       hovered = target;
+      return entered;
     },
     update(dt: number, reduced: boolean, visible: boolean) {
       for (const target of targets) {

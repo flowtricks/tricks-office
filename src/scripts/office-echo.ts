@@ -86,30 +86,59 @@ export function createRoomLightSwitch(scene: T.Scene, daylightMaterial: T.Materi
   };
 }
 
+/** A short, repeatable typing rhythm with punctuation pauses and eased word edges. */
+export function echoTypingTimes(message: string) {
+  let time = 0;
+  const rhythm = [.014, .003, .021, .008, .001, .017, .005];
+  return Array.from(message, (letter, index) => {
+    let delay = .035 + rhythm[index % rhythm.length];
+    if (index < 2) delay += .035 * (2 - index);
+    if (index >= message.length - 2) delay += .025 * (index - message.length + 3);
+    if (message[index - 1] === ",") delay += .22;
+    else if (message[index - 1] === " ") delay += .065;
+    if (letter === " ") delay *= .75;
+    time += delay;
+    return time;
+  });
+}
+
 export function createEchoCommand() {
-  let on = true, elapsed = 0, message = "", applied = false;
+  let on = true, elapsed = 0, message = "", applied = false, acknowledged = false;
+  let typedLength = 0;
+  let typingTimes: number[] = [];
   return {
     get lightsOn() { return on; },
     get busy() { return message !== "" && !applied; },
     start() {
       if (message && !applied) return;
       elapsed = 0;
-      applied = false;
+      typedLength = 0;
+      applied = acknowledged = false;
       message = on ? "Alexa, lights off" : "Alexa, lights on";
+      typingTimes = echoTypingTimes(message);
       return message;
     },
     update(dt: number) {
-      if (!message) return { text: "", visible: false, changed: false, on };
+      if (!message) return { text: "", visible: false, changed: false, on, exit: "none", finishedTyping: false, typedLetters: 0 };
       elapsed += dt;
-      const length = Math.min(message.length, Math.floor(elapsed / .055));
+      let length = typedLength;
+      while (length < typingTimes.length && elapsed >= typingTimes[length]) length++;
+      const typingDuration = typingTimes[typingTimes.length - 1];
+      const typedLetters = (message.slice(typedLength, length).match(/[a-z]/gi) ?? []).length;
+      typedLength = length;
+      const finishedTyping = !acknowledged && length === message.length;
+      if (finishedTyping) acknowledged = true;
       let changed = false;
-      if (!applied && elapsed >= message.length * .055 + .25) {
+      if (!applied && elapsed >= typingDuration + .25) {
         on = !on;
         applied = changed = true;
       }
       const text = message.slice(0, length);
-      if (elapsed > message.length * .055 + 3) message = "";
-      return { text, visible: !!message, changed, on };
+      // Let the completed line read briefly, then dismiss text, shape, and opacity in order.
+      const exitTime = elapsed - (typingDuration + 1.0);
+      const exit = exitTime < 0 ? "none" : exitTime < .18 ? "text" : exitTime < .40 ? "shrink" : "fade";
+      if (exitTime >= .56) message = "";
+      return { text, visible: !!message, changed, on, exit, finishedTyping, typedLetters };
     },
   };
 }

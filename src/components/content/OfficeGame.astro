@@ -379,6 +379,23 @@ const { render = true } = Astro.props;
     }
     .office-game_speech-size { visibility: hidden; }
     .office-game_speech-letters { position: absolute; inset: .95rem 1.35rem; }
+    .office-game_speech-letters {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .office-game_speech:is([data-exit="text"], [data-exit="shrink"], [data-exit="fade"]) .office-game_speech-letters {
+      opacity: 0;
+      transform: translateY(-.25rem);
+    }
+    .office-game_speech[data-visible="true"]:is([data-exit="shrink"], [data-exit="fade"]) {
+      transform: translate(-50%, -100%) scale(.88);
+      transition: transform .22s cubic-bezier(.4, 0, .6, 1);
+    }
+    .office-game_speech[data-visible="true"][data-exit="fade"] {
+      opacity: 0;
+      transition: opacity .16s ease;
+    }
     .office-game_speech[data-typing="true"] .office-game_speech-letters::after {
       content: "";
       display: inline-block;
@@ -390,7 +407,9 @@ const { render = true } = Astro.props;
       vertical-align: -.08em;
     }
     @media (prefers-reduced-motion: reduce) {
-      .office-game_speech, .office-game_speech[data-visible="true"] { transition: none; transform: translate(-50%, -100%); }
+      .office-game_speech, .office-game_speech[data-visible="true"],
+      .office-game_speech[data-visible="true"][data-exit] { transition: none; transform: translate(-50%, -100%); }
+      .office-game_speech .office-game_speech-letters { transition: none; transform: none; }
     }
     .office-game_loading {
       position: absolute;
@@ -518,6 +537,7 @@ const { render = true } = Astro.props;
     createWalkCycle,
     WALK_SPEED,
   } from "@/scripts/character-animation";
+  import { createFootContacts, createFootstepAudio, createAlexaReplyAudio, createShelfHoverAudio, createCharacterLiftAudio, createObjectPressAudio, createShelfTransitionAudio, createTypingAudio, createDeskAudio } from "@/scripts/office-audio";
   import { createOfficeFrameBudget } from "@/scripts/office-frame-budget";
   import { isAppleTouchDevice, officePixelRatio, officeRenderSupport } from "@/scripts/office-render-support";
   import { prepareOfficeChair } from "@/scripts/office-chair";
@@ -1149,6 +1169,7 @@ const { render = true } = Astro.props;
       deskSpeed = 0.24;
     let deskPressed: (typeof deskButtons)[number] | undefined;
     function releaseDesk() {
+      deskAudio?.stop();
       if (!deskPressed) return;
       get("[data-desk-status]").textContent =
         desktop.position.y >= deskMax
@@ -1513,6 +1534,15 @@ const { render = true } = Astro.props;
     prepareCharacter(model.scene, characterRoomLight);
     const characterAnimator = createCharacterAnimator(model.scene);
     const walkCycle = createWalkCycle();
+    const footContacts = createFootContacts();
+    let footsteps: ReturnType<typeof createFootstepAudio> | undefined;
+    let alexaReply: ReturnType<typeof createAlexaReplyAudio> | undefined;
+    let shelfHoverAudio: ReturnType<typeof createShelfHoverAudio> | undefined;
+    let characterLiftAudio: ReturnType<typeof createCharacterLiftAudio> | undefined;
+    let objectPressAudio: ReturnType<typeof createObjectPressAudio> | undefined;
+    let shelfTransitionAudio: ReturnType<typeof createShelfTransitionAudio> | undefined;
+    let typingAudio: ReturnType<typeof createTypingAudio> | undefined;
+    let deskAudio: ReturnType<typeof createDeskAudio> | undefined;
     // Keep the desktop, telescoping legs, equipment, and buttons live so
     // height adjustments and button presses remain visible after batching.
     const movingDesk = group(scene);
@@ -1608,6 +1638,7 @@ const { render = true } = Astro.props;
     // Nestle the speaker between the two skirting boards beside the window.
     echo.position.set(-3.76, 0, -2.83);
     scene.add(echo);
+    let echoHovered = false, echoHoverAmount = 0;
     const disposePicking = accelerateOfficePicking(scene);
     signal.addEventListener("abort", disposePicking, { once: true });
     const echoCommand = createEchoCommand();
@@ -1620,6 +1651,7 @@ const { render = true } = Astro.props;
     function speakToEcho() {
       const message = echoCommand.start();
       if (!message) return;
+      if (sound) objectPressAudio?.play();
       speechSize.textContent = message;
       get("[data-speech-status]").textContent = message;
       speechLetters.textContent = "";
@@ -1736,6 +1768,8 @@ const { render = true } = Astro.props;
       { elapsed: number; focus: T.Vector3; orbit: T.Vector3 } | undefined;
     const defaultViewLabel = view.getAttribute("aria-label")!;
     function inspectShelf(target?: ShelfFocusTarget) {
+      if (target && sound) objectPressAudio?.play();
+      if ((target || inspectedShelf) && sound) shelfTransitionAudio?.play();
       inspectionTransition = reduced.matches
         ? undefined
         : {
@@ -1747,6 +1781,7 @@ const { render = true } = Astro.props;
       inspectionPointer.set(0, 0);
       inspectionParallax.set(0, 0);
       shelfPicking.setHovered();
+      echoHovered = false;
       shelfPressed = shelfClicked = undefined;
       clearInput();
       view.style.cursor = target ? "zoom-out" : "";
@@ -1929,6 +1964,14 @@ const { render = true } = Astro.props;
     }
     let musicPlayRequest = 0;
     function pauseMusic() {
+      footsteps?.stop();
+      alexaReply?.stop();
+      shelfHoverAudio?.stop();
+      characterLiftAudio?.stop();
+      objectPressAudio?.stop();
+      shelfTransitionAudio?.stop();
+      typingAudio?.stop();
+      deskAudio?.stop();
       musicPlayRequest++;
       music.pause();
     }
@@ -1939,6 +1982,7 @@ const { render = true } = Astro.props;
       void music.play().catch(error => {
         if (request !== musicPlayRequest || disposed || !sound || document.hidden) return;
         sound = false;
+        pauseMusic();
         void audio?.suspend();
         updateSoundButton();
         console.warn("Office music could not start", error);
@@ -1952,6 +1996,22 @@ const { render = true } = Astro.props;
           playMusic();
           audio ??= new AudioContext();
           void audio.resume();
+          footsteps ??= createFootstepAudio(audio, signal);
+          void footsteps.load();
+          alexaReply ??= createAlexaReplyAudio(audio, signal);
+          void alexaReply.load();
+          shelfHoverAudio ??= createShelfHoverAudio(audio, signal);
+          void shelfHoverAudio.load();
+          characterLiftAudio ??= createCharacterLiftAudio(audio, signal);
+          void characterLiftAudio.load();
+          objectPressAudio ??= createObjectPressAudio(audio, signal);
+          void objectPressAudio.load();
+          shelfTransitionAudio ??= createShelfTransitionAudio(audio, signal);
+          void shelfTransitionAudio.load();
+          typingAudio ??= createTypingAudio(audio, signal);
+          void typingAudio.load();
+          deskAudio ??= createDeskAudio(audio, signal);
+          void deskAudio.load();
         } else {
           pauseMusic();
           void audio?.suspend();
@@ -2085,6 +2145,7 @@ const { render = true } = Astro.props;
         pointerId = e.pointerId;
         hoverPointer = undefined;
         shelfPicking.setHovered();
+        echoHovered = false;
         pointerStart.set(e.clientX, e.clientY);
         pointerLast.copy(pointerStart);
         dragging = false;
@@ -2095,6 +2156,8 @@ const { render = true } = Astro.props;
         deskPressed = pickDeskButton();
         if (deskPressed) {
           deskPressed.position.z = 0.064;
+          deskAudio?.setPlaying(sound && (deskPressed.userData.direction > 0
+            ? desktop.position.y < deskMax : desktop.position.y > deskMin));
           return;
         }
         echoPressed = pickEcho();
@@ -2112,6 +2175,7 @@ const { render = true } = Astro.props;
         const hit = pickRay.intersectObject(character, true)[0];
         if (hit && !seating.active) {
           carrying = true;
+          if (sound) characterLiftAudio?.grab();
           falling = false;
           keys.clear();
           joy.set(0, 0);
@@ -2208,6 +2272,7 @@ const { render = true } = Astro.props;
       "pointerleave",
       () => {
         shelfPicking.setHovered();
+        echoHovered = false;
         inspectionPointer.set(0, 0);
         hoverPointer = undefined;
       },
@@ -2424,6 +2489,8 @@ const { render = true } = Astro.props;
             deskMax,
           );
         }
+        deskAudio?.setPlaying(sound && !!deskPressed && (deskPressed.userData.direction > 0
+          ? desktop.position.y < deskMax : desktop.position.y > deskMin));
         const horizontal =
           Number(keys.has("KeyD") || keys.has("ArrowRight")) -
           Number(keys.has("KeyA") || keys.has("ArrowLeft")) +
@@ -2526,6 +2593,7 @@ const { render = true } = Astro.props;
             hangSway.set(0, 0);
             hangSwayVelocity.set(0, 0);
             walkCycle.reset();
+            if (sound) characterLiftAudio?.land();
           }
         }
         if (
@@ -2588,6 +2656,9 @@ const { render = true } = Astro.props;
           dt,
           chairMotion.active ? chairMotion.walking : input.lengthSq() > 0.0001,
         );
+        const contacts = footContacts(gait.phase, gait.stride,
+          !carrying && !falling && !reduced.matches && (!chairMotion.pose || chairMotion.pose.sit < .05));
+        if (sound) for (let i = 0; i < contacts; i++) footsteps?.play();
         characterAnimator.update({
           time,
           ...gait,
@@ -2614,11 +2685,17 @@ const { render = true } = Astro.props;
         aimPointer(hoverPointer);
         hoverPointer = undefined;
         const hovered = pickShelfObject();
-        shelfPicking.setHovered(hovered);
-        const cursor = hovered ? "zoom-in" : pickDeskButton() || pickEcho() || pickSeat() ? "pointer" : "";
+        if (shelfPicking.setHovered(hovered) && sound) shelfHoverAudio?.play();
+        const overEcho = !hovered && pickEcho();
+        if (overEcho && !echoHovered && sound) shelfHoverAudio?.play();
+        echoHovered = !!overEcho;
+        const cursor = hovered ? "zoom-in" : pickDeskButton() || overEcho || pickSeat() ? "pointer" : "";
         if (view.style.cursor !== cursor) view.style.cursor = cursor;
       }
       shelfPicking.update(dt, reduced.matches, staticLeftWall.visible);
+      const echoHoverGoal = echoHovered && !paused && !inspectedShelf ? 1 : 0;
+      echoHoverAmount = T.MathUtils.lerp(echoHoverAmount, echoHoverGoal, 1 - Math.exp(-dt * (echoHoverGoal ? 12 : 8)));
+      echo.position.y = reduced.matches ? 0 : echoHoverAmount * .035;
       leafMotion.update(dt, !paused && !reduced.matches && !dragging);
       windowWalkTarget.set(0, 0, 0);
       if (!wideView && !inspectedShelf && !reduced.matches) {
@@ -2633,13 +2710,16 @@ const { render = true } = Astro.props;
         windowOpening.height,
       );
       const command = echoCommand.update(paused ? 0 : dt);
+      if (sound) for (let i = 0; i < command.typedLetters; i++) typingAudio?.play();
+      if (command.finishedTyping && sound) alexaReply?.play();
       if (command.changed) {
         roomLighting.set(command.on);
         echoButton.textContent = `Ask Alexa to turn the lights ${command.on ? "off" : "on"}`;
       }
       roomLighting.update(paused ? 0 : dt);
       if (command.visible && speechLetters.textContent !== command.text) speechLetters.textContent = command.text;
-      const typing = String(command.visible && command.text.length < (speechSize.textContent?.length ?? 0));
+      if (speech.dataset.exit !== command.exit) speech.dataset.exit = command.exit;
+      const typing = String(command.visible && command.exit === "none" && command.text.length < (speechSize.textContent?.length ?? 0));
       if (speech.dataset.typing !== typing) speech.dataset.typing = typing;
       if (command.visible) {
         head.getWorldPosition(speechAnchor);

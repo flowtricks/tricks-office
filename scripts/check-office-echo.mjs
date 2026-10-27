@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import * as T from 'three';
-import { createEchoCommand, createRoomLightSwitch } from '../src/scripts/office-echo.ts';
+import { createEchoCommand, createRoomLightSwitch, echoTypingTimes } from '../src/scripts/office-echo.ts';
 const commands = createEchoCommand();
 assert.equal(commands.start(), 'Alexa, lights off');
 assert.equal(commands.start(), undefined, 'Repeated clicks cannot interrupt a command');
-assert.equal(commands.update(.12).text, 'Al');
+assert.equal(commands.update(.12).text, 'A');
 assert.equal(commands.lightsOn, true, 'Lights stay on while the character speaks');
-assert.equal(commands.update(1.1).changed, true);
+assert.equal(commands.update(2).changed, true);
 assert.equal(commands.lightsOn, false);
 assert.equal(commands.update(.1).changed, false, 'Apply each command once');
 assert.equal(commands.busy, false, "Next click is enabled as soon as the lights switch");
 assert.equal(commands.start(), 'Alexa, lights on');
-assert.equal(commands.update(1.2).on, true);
+assert.equal(commands.update(2).on, true);
 const scene = new T.Scene();
 scene.environmentIntensity = .25;
 const lamp = new T.PointLight('white', 12);
@@ -32,3 +32,51 @@ lighting.set(true);for(let i=0;i<120;i++)lighting.update(1/60);
 assert.equal(lamp.intensity,12);assert.equal(surface.emissiveIntensity,4);assert.equal(surface.envMapIntensity,.3);
 assert.equal(scene.environmentIntensity,.25);assert.equal(fill.value,1);assert.equal(screen.color.getHex(),0xabcdef);
 console.log('PASS: typed alternating commands, click debounce, room fixtures and glow fully off, window/ring preserved, exact lighting restoration.');
+
+const exitCommand = createEchoCommand();
+const line = exitCommand.start();
+const exitStart = echoTypingTimes(line).at(-1) + 1.0;
+assert.equal(exitCommand.update(exitStart - .01).exit, 'none');
+let bubble = exitCommand.update(.02);
+assert.equal(bubble.exit, 'text');
+assert.equal(bubble.visible, true);
+bubble = exitCommand.update(.18);
+assert.equal(bubble.exit, 'shrink');
+assert.equal(bubble.visible, true);
+bubble = exitCommand.update(.22);
+assert.equal(bubble.exit, 'fade');
+assert.equal(bubble.visible, true);
+assert.equal(exitCommand.update(.16).visible, false);
+assert.ok(exitStart + .56 < 3.2, 'Bubble exits sooner than the previous ~4-second display');
+exitCommand.start();
+assert.equal(exitCommand.update(.01).exit, 'none', 'New command resets the exit sequence');
+console.log('PASS: text exits first, then bubble shrinks, then fades, with a shorter hold and clean restart.');
+
+const reply = createEchoCommand();
+const typedLine = reply.start();
+assert.equal(reply.update(echoTypingTimes(typedLine).at(-1) - .001).finishedTyping, false);
+const typed = reply.update(.002);
+assert.equal(typed.text, typedLine);
+assert.equal(typed.finishedTyping, true, 'Reply fires on the frame the final letter appears');
+assert.equal(typed.changed, false, 'Reply starts before the existing light-switch delay');
+assert.equal(reply.update(.001).finishedTyping, false, 'Only one reply per message');
+reply.update(.3);
+const nextLine = reply.start();
+assert.equal(reply.update(echoTypingTimes(nextLine).at(-1) + .001).finishedTyping, true, 'Both lights-on and lights-off receive a reply');
+console.log('PASS: Alexa acknowledgement fires once immediately after the final typed letter.');
+
+for (const fps of [30, 60, 120]) {
+  const typed = createEchoCommand();
+  const line = typed.start();
+  let clicks = 0;
+  for (let frame = 0; frame < fps * 3; frame++) clicks += typed.update(1 / fps).typedLetters;
+  assert.equal(clicks, line.replace(/[^a-z]/gi, "").length, "One sound per letter, without spaces, punctuation or exit sounds");
+}
+console.log("PASS: each typed letter emits one click at 30/60/120 fps.");
+
+const rhythm = echoTypingTimes("Alexa, lights off");
+const delays = rhythm.map((time, i) => time - (rhythm[i - 1] ?? 0));
+assert.ok(delays[6] > .18, "Pause after addressing Alexa");
+assert.ok(delays.at(-1) > delays[10], "Ease into the final letter");
+assert.ok(new Set(delays.map(delay => delay.toFixed(3))).size > 6, "Typing has varied cadence");
+console.log("PASS: natural typing rhythm, punctuation pause, and eased ending.");
