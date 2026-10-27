@@ -113,7 +113,7 @@ const { render = true } = Astro.props;
         <span class="office-game_speech-letters" data-speech-letters />
       </div>
       <span class="sr-only" data-speech-status role="status" aria-live="polite" />
-      <button class="sr-only" data-echo-command>Ask Alex to turn the lights off</button>
+      <button class="sr-only" data-echo-command>Ask Alexa to turn the lights off</button>
       <div class="office-game_touch" data-joystick aria-label="Drag to walk">
         <span data-thumb />
       </div>
@@ -2611,7 +2611,7 @@ const { render = true } = Astro.props;
       const command = echoCommand.update(paused ? 0 : dt);
       if (command.changed) {
         roomLighting.set(command.on);
-        echoButton.textContent = `Ask Alex to turn the lights ${command.on ? "off" : "on"}`;
+        echoButton.textContent = `Ask Alexa to turn the lights ${command.on ? "off" : "on"}`;
       }
       roomLighting.update(paused ? 0 : dt);
       if (command.visible && speechLetters.textContent !== command.text) speechLetters.textContent = command.text;

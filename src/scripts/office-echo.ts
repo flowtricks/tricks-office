@@ -95,7 +95,7 @@ export function createEchoCommand() {
       if (message && !applied) return;
       elapsed = 0;
       applied = false;
-      message = on ? "Alex, lights off" : "Alex, lights on";
+      message = on ? "Alexa, lights off" : "Alexa, lights on";
       return message;
     },
     update(dt: number) {
