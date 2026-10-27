@@ -2629,6 +2629,14 @@ const { render = true } = Astro.props;
     }
     cameraFocus.set(0, 1.5, -1.35);
     updateCamera(1);
+    windowEye.setFromSphericalCoords(
+      cameraOrbit.z,
+      Math.PI / 2 - cameraOrbit.y,
+      cameraOrbit.x,
+    ).add(cameraFocus);
+    windowGroup.worldToLocal(windowEye);
+    windowEye.z -= 0.012;
+    windowLandscape.updateView(windowEye, windowOpening.width, windowOpening.height);
     const movementInput = new T.Vector2();
     const verticalAxis = new T.Vector3(0, 1, 0);
     function animate(now: number) {
