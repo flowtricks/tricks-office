@@ -17,8 +17,8 @@ export function officePixelRatio(
   // Bound offscreen allocations on Retina iPhones/iPads without changing framing.
   return Math.min(
     dpr,
-    2,
-    appleTouch ? Math.sqrt(2_000_000 / Math.max(1, width * height)) : 2,
+    appleTouch ? 1.75 : 2,
+    appleTouch ? Math.sqrt(1_500_000 / Math.max(1, width * height)) : 2,
   );
 }
 

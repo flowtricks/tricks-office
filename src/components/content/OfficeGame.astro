@@ -517,6 +517,7 @@ const { render = true } = Astro.props;
     createWalkCycle,
     WALK_SPEED,
   } from "@/scripts/character-animation";
+  import { createOfficeFrameBudget } from "@/scripts/office-frame-budget";
   import { isAppleTouchDevice, officePixelRatio, officeRenderSupport } from "@/scripts/office-render-support";
   import { prepareOfficeChair } from "@/scripts/office-chair";
   import {
@@ -630,6 +631,7 @@ const { render = true } = Astro.props;
     const compact = matchMedia("(max-width: 48rem)").matches;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const appleTouch = isAppleTouchDevice(navigator.userAgent, navigator.maxTouchPoints);
+    const frameBudget = createOfficeFrameBudget(appleTouch);
     let renderer: T.WebGLRenderer;
     try {
       renderer = new T.WebGLRenderer({
@@ -1000,7 +1002,7 @@ const { render = true } = Astro.props;
     const key = new T.DirectionalLight("#ffe2b0", 1.9);
     key.position.set(-4, 5, 4);
     key.castShadow = true;
-    key.shadow.mapSize.set(compact ? 2048 : 4096, compact ? 2048 : 4096);
+    key.shadow.mapSize.set(compact || appleTouch ? 2048 : 4096, compact || appleTouch ? 2048 : 4096);
     key.shadow.camera.left = -7;
     key.shadow.camera.right = 7;
     key.shadow.camera.top = 7;
@@ -1444,6 +1446,7 @@ const { render = true } = Astro.props;
     const windowWalkTarget = new T.Vector3();
     const windowFrame = mat("#101214", 0.5, 0.2);
     const daylightMaterial = new T.MeshBasicMaterial({ map: windowLandscape.texture });
+    windowLandscape.applyToMaterial(daylightMaterial);
     mesh(
       new T.PlaneGeometry(windowOpening.width, windowOpening.height),
       daylightMaterial,
@@ -2279,9 +2282,12 @@ const { render = true } = Astro.props;
     let width = 0,
       height = 0;
     function resize() {
-      width = Math.max(1, view.clientWidth);
-      height = Math.max(1, view.clientHeight);
-      const pixelRatio = officePixelRatio(width, height, devicePixelRatio, appleTouch);
+      const nextWidth = Math.max(1, view.clientWidth);
+      const nextHeight = Math.max(1, view.clientHeight);
+      const pixelRatio = officePixelRatio(nextWidth, nextHeight, devicePixelRatio, appleTouch) * frameBudget.resolutionScale;
+      if (width === nextWidth && height === nextHeight && renderer.getPixelRatio() === pixelRatio) return;
+      width = nextWidth;
+      height = nextHeight;
       if (renderer.getPixelRatio() !== pixelRatio) {
         renderer.setPixelRatio(pixelRatio);
         composer.setPixelRatio(pixelRatio);
@@ -2379,6 +2385,8 @@ const { render = true } = Astro.props;
         previous = now;
         return;
       }
+      if (!frameBudget.renderDue(now)) return;
+      if (frameBudget.sample(now - previous)) resize();
       const dt = Math.min((now - previous) / 1000 || 0.016, 0.04);
       previous = now;
       if (!paused) time += dt;
@@ -2622,7 +2630,7 @@ const { render = true } = Astro.props;
         speech.style.left = `${T.MathUtils.clamp((speechAnchor.x * .5 + .5) * width, half, width - half) / width * 100}%`;
         speech.style.top = `${T.MathUtils.clamp((-.5 * speechAnchor.y + .5) * height - 12, speech.offsetHeight + 16, height - 24) / height * 100}%`;
       }
-      renderer.shadowMap.needsUpdate = true;
+      renderer.shadowMap.needsUpdate = frameBudget.shadowsDue(now);
       composer.render();
 
     }
@@ -2669,6 +2677,7 @@ const { render = true } = Astro.props;
       },
       { signal },
     );
+    await windowLandscape.ready;
     await renderer.compileAsync(scene, camera);
     if (disposed) return;
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("export-branding")) {

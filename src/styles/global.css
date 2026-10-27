@@ -5,3 +5,11 @@
 @import "./base.css" layer(base);
 @import "./patterns.css" layer(patterns);
 @import "./utilities.css" layer(utilities);
+
+/* The office is an interactive scene; dragging/touching never selects page text. */
+*,
+*::before,
+*::after {
+  -webkit-user-select: none;
+  user-select: none;
+}
