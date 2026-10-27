@@ -59,6 +59,7 @@ export function createOfficeSeating(
   let inputWasActive = false;
   let armed = true;
   let side = -1;
+  let chairReturn: { pull: number; elapsed: number } | undefined;
   const state: Frame = {
     position: character.position.clone(),
     yaw: character.rotation.y,
@@ -158,12 +159,33 @@ export function createOfficeSeating(
       return mode !== "free" || inputCooldown > 0;
     },
     get stage() {
-      return beats[0]?.name ?? mode;
+      return chairReturn ? "return-chair" : beats[0]?.name ?? mode;
+    },
+    releaseForDrag() {
+      if (mode === "free" && !inputCooldown) return;
+      chairReturn = { pull: state.pull, elapsed: 0 };
+      mode = "free";
+      beats = [];
+      elapsed = 0;
+      exitRequested = false;
+      inputCooldown = 0;
+      inputWasActive = false;
+      armed = false;
+      state.sit = state.lean = 0;
+      pose.sit = pose.lean = pose.footLift = 0;
     },
     requestExit() {
       if (mode === "seated" && inputCooldown === 0) exitRequested = true;
     },
     update(dt: number, input: T.Vector2, enabled: boolean) {
+      if (chairReturn) {
+        chairReturn.elapsed += dt;
+        const progress = T.MathUtils.smootherstep(chairReturn.elapsed / 0.65, 0, 1);
+        state.pull = T.MathUtils.lerp(chairReturn.pull, retreat, progress);
+        chair.position.copy(home).addScaledVector(forward, -state.pull);
+        chair.updateMatrixWorld(true);
+        if (progress === 1) chairReturn = undefined;
+      }
       inputCooldown = Math.max(0, inputCooldown - dt);
       const inputActive = input.lengthSq() > 0.01;
       fromDesk.copy(character.position).sub(deskPosition);
@@ -175,6 +197,7 @@ export function createOfficeSeating(
       if (!armed && (!inputActive || !nearDesk)) armed = true;
       if (
         mode === "free" &&
+        !chairReturn &&
         inputCooldown === 0 &&
         enabled &&
         armed &&

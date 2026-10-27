@@ -37,8 +37,8 @@ const { render = true } = Astro.props;
           <button
             class="office-game_icon office-game_sound"
             data-sound
-            aria-label="Turn sound on"
-            aria-pressed="false"
+            aria-label="Turn sound off"
+            aria-pressed="true"
             title="Toggle sound"
           >
             <svg
@@ -49,18 +49,17 @@ const { render = true } = Astro.props;
             >
               <>
                 <path d="M11 4 5 9H2v6h3l6 5V4Z" />
-                <path data-sound-off d="m17 9 5 6m0-6-5 6" />
+                <path data-sound-off style="display:none" d="m17 9 5 6m0-6-5 6" />
                 <path
                   data-sound-on
                   d="M15 8c3 2 3 6 0 8m3-11c5 4 5 10 0 14"
-                  style="display:none"
                 />
               </>
             </svg>
           </button>
           <div
             class="office-game_views"
-            data-views="close"
+            data-views="wide"
             role="group"
             aria-label="Camera view"
           >
@@ -68,7 +67,7 @@ const { render = true } = Astro.props;
               class="office-game_icon office-game_view-button"
               data-camera="wide"
               aria-label="Zoomed out view"
-              aria-pressed="false"
+              aria-pressed="true"
               title="Zoomed out view"
             >
               <svg
@@ -85,7 +84,7 @@ const { render = true } = Astro.props;
               class="office-game_icon office-game_view-button"
               data-camera="close"
               aria-label="Zoomed in view"
-              aria-pressed="true"
+              aria-pressed="false"
               title="Zoomed in view"
             >
               <svg
@@ -101,6 +100,37 @@ const { render = true } = Astro.props;
           </div>
         </div>
       </header>
+      <footer class="office-game_footer">
+        <div class="office-game_controls" data-movement-guide role="img" aria-label="Use arrow keys to explore">
+          <span class="office-game_keys" aria-hidden="true"><kbd class="office-game_key-up">↑</kbd><kbd class="office-game_key-left">←</kbd><kbd class="office-game_key-down">↓</kbd><kbd class="office-game_key-right">→</kbd></span>
+        </div>
+        <div class="office-game_discoveries theme-dark" aria-label="Easter egg discoveries">
+          <div class="office-game_discovery-heading">
+            <span>Easter eggs</span>
+            <span class="office-game_discovery-count" data-egg-count aria-hidden="true">0 / 4</span>
+          </div>
+          <p class="sr-only" data-egg-caption>A few little secrets to uncover.</p>
+          <span class="sr-only" data-egg-status role="status">0 of 4 Easter eggs found</span>
+          <div class="office-game_discovery-actions">
+          <div class="office-game_egg-dots" aria-hidden="true">
+            {['shelf', 'desk', 'alexa', 'character'].map(egg => (
+              <span data-egg={egg}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c0 4-3 7-7 7s-7-3-7-7S8 3 12 3s7 7 7 11Z" /><path class="office-game_egg-check" d="m9 13 2 2 4-4" /></svg>
+              </span>
+            ))}
+          </div>
+          <button class="office-game_hint-button" data-hint-button aria-expanded="false" aria-controls="office-game-hint" aria-label="Reveal hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 18h6m-5 3h4M8 14a6 6 0 1 1 8 0c-1 .8-1 1.5-1 2H9c0-.5 0-1.2-1-2Z" /></svg>
+            <span>Hint</span><svg class="office-game_hint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+          </button>
+          </div>
+          <div class="office-game_hint" id="office-game-hint" data-hint data-visible="false" aria-hidden="true" inert>
+            <div class="office-game_hint-content">
+              <p data-hint-text role="status" />
+            </div>
+          </div>
+        </div>
+      </footer>
       <div class="office-game_loading" data-loading role="status">
         <div class="office-game_loading-content">
           <h2 class="office-game_loading-title"><span data-load-word>Welcome</span>{" "}<span data-load-word>to</span>{" "}<span data-load-word>my</span>{" "}<span data-load-word>office.</span></h2>
@@ -264,20 +294,98 @@ const { render = true } = Astro.props;
     .office-game_views[data-views="close"]::before {
       transform: translateX(100%);
     }
+    .office-game_footer {
+      position: absolute;
+      inset-inline: 1.5rem;
+      bottom: 1.5rem;
+      z-index: 3;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+      pointer-events: none;
+      font-size: .75rem;
+    }
+    .office-game_controls {
+      flex-shrink: 0;
+      transition: visibility 0s linear .48s;
+    }
+    .office-game_controls[data-used="true"] { visibility: hidden; }
+    .office-game_controls[data-used="true"] kbd { opacity: 0; transform: scale(.55); }
+    .office-game_keys { display: grid; grid-template-columns: repeat(3, 1.7rem); grid-template-areas: ". up ." "left down right"; gap: .3rem; }
+    .office-game_key-up { grid-area: up; --key-exit-delay: 0s; }
+    .office-game_key-left { grid-area: left; --key-exit-delay: .06s; }
+    .office-game_key-down { grid-area: down; --key-exit-delay: .12s; }
+    .office-game_key-right { grid-area: right; --key-exit-delay: .18s; }
+    .office-game_keys kbd {
+      display: grid;
+      place-items: center;
+      height: 1.7rem;
+      border: 0;
+      border-radius: .4rem;
+      background: #303030;
+      font-family: inherit;
+      font-size: .85rem;
+      transform-origin: center;
+      transition: opacity .25s ease var(--key-exit-delay), transform .3s cubic-bezier(.4, 0, .2, 1) var(--key-exit-delay);
+    }
+    .office-game_discoveries {
+      position: relative;
+      margin-left: auto;
+      width: 12rem;
+      max-width: calc(100vw - 7.5rem);
+      padding: .7rem .8rem;
+      border: 0;
+      border-radius: 1.1rem;
+      background: #202020;
+      box-shadow: 0 .5rem 2rem #0003;
+      pointer-events: auto;
+      font-size: .75rem;
+    }
+    .office-game_discovery-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-weight: 500; }
+    .office-game_discovery-count { color: #b8b8b8; font-size: .65rem; font-variant-numeric: tabular-nums; }
+    .office-game_discovery-actions { display: flex; align-items: center; justify-content: space-between; gap: .4rem; margin-top: .5rem; }
+    .office-game_egg-dots { display: flex; gap: .2rem; }
+    .office-game_egg-dots span { display: grid; place-items: center; width: .85rem; height: 1.5rem; color: #737373; transition: color .25s; }
+    .office-game_egg-dots svg { width: .85rem; height: 1rem; }
+    .office-game_egg-check { opacity: 0; }
+    .office-game_egg-dots [data-found] { color: #fff; }
+    .office-game_egg-dots [data-found] .office-game_egg-check { opacity: 1; }
+    .office-game_hint-button { display: flex; align-items: center; gap: .35rem; min-height: 1.8rem; padding: .35rem .5rem; border: 0; border-radius: .45rem; background: #303030; color: #d4d4d4; font: inherit; font-size: .65rem; cursor: pointer; transition: background .18s, color .18s; }
+    .office-game_hint-button svg { width: .9rem; height: .9rem; }
+    .office-game_hint-chevron { margin-left: auto; transition: transform .22s ease; }
+    .office-game_hint-button[aria-expanded="true"] .office-game_hint-chevron { transform: rotate(180deg); }
+    .office-game_hint-button:hover { color: #fff; background: #ffffff12; }
+    .office-game_hint {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-.25rem);
+      transition: grid-template-rows .28s cubic-bezier(.16, 1, .3, 1), opacity .18s ease, transform .22s ease, visibility 0s linear .28s;
+    }
+    .office-game_hint[data-visible="true"] { grid-template-rows: 1fr; opacity: 1; visibility: visible; transform: translateY(0); transition: grid-template-rows .32s cubic-bezier(.16, 1, .3, 1), opacity .22s ease .06s, transform .32s cubic-bezier(.16, 1, .3, 1), visibility 0s; }
+    .office-game_hint-content { min-height: 0; overflow: hidden; }
+    .office-game_hint p { margin: .65rem 0 0; font-size: .7rem; line-height: 1.6; }
+    @media (prefers-reduced-motion: reduce) {
+      .office-game_hint, .office-game_hint[data-visible="true"] { transform: none; transition: none; }
+      .office-game_egg-dots span, .office-game_hint-button, .office-game_hint-chevron, .office-game_controls, .office-game_keys kbd { transition: none; }
+      .office-game_controls[data-used="true"] kbd { transform: none; }
+    }
     .office-game_speech {
       position: absolute;
       z-index: 4;
       pointer-events: none;
       padding: .95rem 1.35rem;
       border-radius: 1.35rem;
-      background: linear-gradient(155deg, #fff, #f0f2f5);
+      background: #f0f2f5;
       color: #262a31;
       font-size: clamp(.9rem, 2.3vw, 1.05rem);
       line-height: 1.45;
       font-weight: 500;
       letter-spacing: -.025em;
       white-space: nowrap;
-      box-shadow: 0 .2rem .5rem #0000000d, 0 .8rem 2rem #00000024, inset 0 .0625rem 0 #fff;
+      box-shadow: 0 .2rem .5rem #0000000d, 0 .8rem 2rem #00000024;
       transform-origin: 50% 100%;
       transform: translate(-50%, calc(-100% + .5rem)) scale(.94);
       opacity: 0;
@@ -339,7 +447,7 @@ const { render = true } = Astro.props;
       position: absolute;
       inset: 0;
       z-index: 5;
-      background: radial-gradient(ellipse at 50% 45%, #202020, #0b0b0b 70%);
+      background: #0b0b0b;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -352,7 +460,7 @@ const { render = true } = Astro.props;
       width: min(100%, 25rem);
       padding: clamp(1.75rem, 6vw, 2.75rem);
       border-radius: 2rem;
-      background: linear-gradient(145deg, #222, #161616);
+      background: #1c1c1c;
       box-shadow: 0 1.5rem 5rem #0005;
     }
     .office-game_loading-title { color: #fafafa; max-width: 12ch; font-size: clamp(1.9rem, 6vw, 2.55rem); font-weight: 500; letter-spacing: -.055em; line-height: 1.08; margin: 0 0 2.5rem; }
@@ -418,6 +526,8 @@ const { render = true } = Astro.props;
           padding: 1rem;
           gap: 0.5rem;
         }
+        .office-game_footer { inset-inline: 1rem; bottom: 1rem; gap: .75rem; font-size: .65rem; }
+        .office-game_controls { display: none; }
         .office-game_logo {
           width: 5rem;
         }
@@ -537,6 +647,180 @@ const { render = true } = Astro.props;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const abort = new AbortController();
     const signal = abort.signal;
+    let sound = true, disposed = false;
+    let audio: AudioContext | undefined;
+    try { sound = localStorage.getItem("office-sound-muted") !== "true"; } catch {}
+    let footsteps: ReturnType<typeof createFootstepAudio> | undefined;
+    let alexaReply: ReturnType<typeof createAlexaReplyAudio> | undefined;
+    let shelfHoverAudio: ReturnType<typeof createShelfHoverAudio> | undefined;
+    let characterLiftAudio: ReturnType<typeof createCharacterLiftAudio> | undefined;
+    let objectPressAudio: ReturnType<typeof createObjectPressAudio> | undefined;
+    let shelfTransitionAudio: ReturnType<typeof createShelfTransitionAudio> | undefined;
+    let typingAudio: ReturnType<typeof createTypingAudio> | undefined;
+    let deskAudio: ReturnType<typeof createDeskAudio> | undefined;
+    let chairSlideAudio: ReturnType<typeof createChairSlideAudio> | undefined;
+    function updateSoundButton() {
+      get("[data-sound]").setAttribute("aria-pressed", String(sound));
+      get("[data-sound]").setAttribute("aria-label", sound ? "Turn sound off" : "Turn sound on");
+      root.querySelector<SVGElement>("[data-sound-off]")!.style.display = sound ? "none" : "";
+      root.querySelector<SVGElement>("[data-sound-on]")!.style.display = sound ? "" : "none";
+    }
+    function pauseMusic() {
+      footsteps?.stop();
+      alexaReply?.stop();
+      shelfHoverAudio?.stop();
+      characterLiftAudio?.stop();
+      objectPressAudio?.stop();
+      shelfTransitionAudio?.stop();
+      typingAudio?.stop();
+      deskAudio?.stop();
+      chairSlideAudio?.stop();
+      music.pause();
+    }
+    function playMusic() {
+      if (audio) void resumeOfficeAudio(audio, music, () => sound && !disposed && !document.hidden);
+    }
+    function startAudio() {
+      if (!sound || disposed || document.hidden) return;
+      if (!audio) {
+        useOfficePlaybackSession(signal);
+        audio = new AudioContext();
+        primeOfficeAudio(audio);
+        audio.addEventListener("statechange", () => {
+          if (audio?.state === "interrupted") playMusic();
+        }, { signal });
+        playMusic();
+        footsteps = createFootstepAudio(audio, signal);
+        alexaReply = createAlexaReplyAudio(audio, signal);
+        shelfHoverAudio = createShelfHoverAudio(audio, signal);
+        characterLiftAudio = createCharacterLiftAudio(audio, signal);
+        objectPressAudio = createObjectPressAudio(audio, signal);
+        shelfTransitionAudio = createShelfTransitionAudio(audio, signal);
+        typingAudio = createTypingAudio(audio, signal);
+        deskAudio = createDeskAudio(audio, signal);
+        chairSlideAudio = createChairSlideAudio(audio, signal);
+        for (const clip of [footsteps, alexaReply, shelfHoverAudio, characterLiftAudio, objectPressAudio, shelfTransitionAudio, typingAudio, deskAudio, chairSlideAudio]) void clip.load();
+      } else playMusic();
+    }
+    for (const event of ["pointerdown", "touchend", "click", "keydown"] as const)
+      document.addEventListener(event, (event) => {
+        if (event.target instanceof Element && event.target.closest("[data-sound]")) return;
+        startAudio();
+      }, { capture: true, passive: true, signal });
+    window.addEventListener("pageshow", playMusic, { signal });
+    window.addEventListener("focus", playMusic, { signal });
+    get("[data-sound]").addEventListener("click", () => {
+      sound = !sound;
+      try { localStorage.setItem("office-sound-muted", String(!sound)); } catch {}
+      if (sound) startAudio();
+      else {
+        pauseMusic();
+        void audio?.suspend();
+      }
+      updateSoundButton();
+      view.focus({ preventScroll: true });
+    }, { signal });
+    updateSoundButton();
+
+    const eggs = {
+      shelf: "Something on the shelves deserves a closer look. Try clicking it.",
+      desk: "This desk can stretch its legs. Hold one of the height buttons beneath its front edge.",
+      alexa: "The little speaker on the floor by the window is listening. Give Alexa a click.",
+      character: "Try picking me up! Drag the character, then let go.",
+    };
+    type Egg = keyof typeof eggs;
+    const foundEggs = new Set<Egg>();
+    const hintButton = get<HTMLButtonElement>("[data-hint-button]");
+    const hint = get("[data-hint]");
+    const hintText = get("[data-hint-text]");
+    let hintedEgg: Egg | undefined;
+    let hintRevision = 0;
+    let hintCloseTimer: ReturnType<typeof setTimeout> | undefined;
+    function cancelHintClose() {
+      clearTimeout(hintCloseTimer);
+      hintCloseTimer = undefined;
+    }
+    function hideHint() {
+      cancelHintClose();
+      hintRevision++;
+      hintText.getAnimations().forEach(animation => animation.cancel());
+      hint.getAnimations().filter(animation => animation instanceof Animation && !(animation instanceof CSSTransition)).forEach(animation => animation.cancel());
+      hint.dataset.visible = "false";
+      hint.setAttribute("aria-hidden", "true");
+      hint.inert = true;
+      hintButton.setAttribute("aria-expanded", "false");
+      hintButton.setAttribute("aria-label", "Reveal hint");
+    }
+    function discoverEgg(egg: Egg) {
+      if (foundEggs.has(egg)) return;
+      foundEggs.add(egg);
+      get(`[data-egg="${egg}"]`).toggleAttribute("data-found", true);
+      get("[data-egg-count]").textContent = `${foundEggs.size} / 4`;
+      get("[data-egg-status]").textContent = `${foundEggs.size} of 4 Easter eggs found`;
+      if (hintedEgg === egg) hideHint();
+      if (foundEggs.size === 4) {
+        hideHint();
+        hintButton.hidden = true;
+        get("[data-egg-caption]").textContent = "You found every little secret.";
+      }
+    }
+    const discoveries = get(".office-game_discoveries");
+    function scheduleHintClose() {
+      if (hint.dataset.visible !== "true") return;
+      cancelHintClose();
+      hintCloseTimer = setTimeout(hideHint, 700);
+    }
+    discoveries.addEventListener("pointerenter", cancelHintClose, { signal });
+    discoveries.addEventListener("focusin", cancelHintClose, { signal });
+    discoveries.addEventListener("pointerleave", (event) => {
+      if (event.pointerType !== "touch") scheduleHintClose();
+    }, { signal });
+    discoveries.addEventListener("focusout", (event) => {
+      if (!(event.relatedTarget instanceof Node) || !discoveries.contains(event.relatedTarget)) scheduleHintClose();
+    }, { signal });
+    document.addEventListener("pointerdown", (event) => {
+      if (event.target instanceof Node && !discoveries.contains(event.target)) hideHint();
+    }, { capture: true, signal });
+    async function showHint() {
+      cancelHintClose();
+      const remaining = (Object.keys(eggs) as Egg[]).filter(egg => !foundEggs.has(egg));
+      if (!remaining.length) return;
+      const previous = hintedEgg ? remaining.indexOf(hintedEgg) : -1;
+      hintedEgg = remaining[previous < 0 ? 0 : previous];
+      const message = eggs[hintedEgg];
+      const revision = ++hintRevision;
+      hintText.getAnimations().forEach(animation => animation.cancel());
+      const switching = hint.dataset.visible === "true";
+      if (switching && !reduced.matches) {
+        try {
+          await hintText.animate([{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(-.25rem)" }], { duration: 120, easing: "ease-in", fill: "forwards" }).finished;
+        } catch { return; }
+      }
+      if (revision !== hintRevision || signal.aborted) return;
+      const oldHeight = hint.offsetHeight;
+      hintText.textContent = message;
+      hintText.getAnimations().forEach(animation => animation.cancel());
+      hint.dataset.visible = "true";
+      hint.setAttribute("aria-hidden", "false");
+      hint.inert = false;
+      hintButton.setAttribute("aria-expanded", "true");
+      hintButton.setAttribute("aria-label", "Hide hint");
+      if (switching && !reduced.matches) {
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        hint.animate([{ height: `${oldHeight / rem}rem` }, { height: `${hint.offsetHeight / rem}rem` }], { duration: 240, easing: "cubic-bezier(.16,1,.3,1)" });
+        hintText.animate([{ opacity: 0, transform: "translateY(.3rem)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 240, easing: "cubic-bezier(.16,1,.3,1)" });
+      }
+    }
+    hintButton.addEventListener("click", () => {
+      if (hint.dataset.visible === "true") hideHint();
+      else void showHint();
+    }, { signal });
+    signal.addEventListener("abort", () => {
+      cancelHintClose();
+      hintRevision++;
+      hint.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+    }, { once: true });
+
     let loadingTarget = 0, loadingValue = 0, loadingFrame = 0, nextLoadingTick = 0;
     let finishCount: () => void;
     const countComplete = new Promise<void>(resolve => { finishCount = resolve; });
@@ -1477,15 +1761,6 @@ const { render = true } = Astro.props;
     const characterAnimator = createCharacterAnimator(model.scene);
     const walkCycle = createWalkCycle();
     const footContacts = createFootContacts();
-    let footsteps: ReturnType<typeof createFootstepAudio> | undefined;
-    let alexaReply: ReturnType<typeof createAlexaReplyAudio> | undefined;
-    let shelfHoverAudio: ReturnType<typeof createShelfHoverAudio> | undefined;
-    let characterLiftAudio: ReturnType<typeof createCharacterLiftAudio> | undefined;
-    let objectPressAudio: ReturnType<typeof createObjectPressAudio> | undefined;
-    let shelfTransitionAudio: ReturnType<typeof createShelfTransitionAudio> | undefined;
-    let typingAudio: ReturnType<typeof createTypingAudio> | undefined;
-    let deskAudio: ReturnType<typeof createDeskAudio> | undefined;
-    let chairSlideAudio: ReturnType<typeof createChairSlideAudio> | undefined;
     // Keep the desktop, telescoping legs, equipment, and buttons live so
     // height adjustments and button presses remain visible after batching.
     const movingDesk = group(scene);
@@ -1594,6 +1869,7 @@ const { render = true } = Astro.props;
     function speakToEcho() {
       const message = echoCommand.start();
       if (!message) return;
+      discoverEgg("alexa");
       if (sound) objectPressAudio?.play();
       speechSize.textContent = message;
       get("[data-speech-status]").textContent = message;
@@ -1603,12 +1879,10 @@ const { render = true } = Astro.props;
 
     function updateWallCutaway() {
       // Use the animated camera and a small hysteresis band to avoid flicker
-      // while orbiting along a wall. Wide view always shows the complete room.
+      // while orbiting along a wall.
       staticLeftWall.visible =
-        wideView ||
         camera.position.x > (staticLeftWall.visible ? -4.04 : -3.94);
       staticBackWall.visible =
-        wideView ||
         camera.position.z > (staticBackWall.visible ? -3.06 : -2.96);
       leafMotion.setShelfVisible(staticLeftWall.visible);
     }
@@ -1702,7 +1976,7 @@ const { render = true } = Astro.props;
     }
     const roomCamera = { yaw: 0.5, pitch: 0.33, zoom: 0.9 };
     const closeCamera = { yaw: 0.83, pitch: 0.13, zoom: 1.23 };
-    let wideView = false;
+    let wideView = true;
     let inspectedShelf: ShelfFocusTarget | undefined;
     let shelfPressed: ShelfFocusTarget | undefined;
     let shelfClicked: ShelfFocusTarget | undefined;
@@ -1712,6 +1986,7 @@ const { render = true } = Astro.props;
       { elapsed: number; focus: T.Vector3; orbit: T.Vector3 } | undefined;
     const defaultViewLabel = view.getAttribute("aria-label")!;
     function inspectShelf(target?: ShelfFocusTarget) {
+      if (target) discoverEgg("shelf");
       if (target && sound) objectPressAudio?.play();
       if ((target || inspectedShelf) && sound) shelfTransitionAudio?.play();
       inspectionTransition = reduced.matches
@@ -1738,17 +2013,14 @@ const { render = true } = Astro.props;
       if (target) view.dataset.inspecting = target.name;
       else delete view.dataset.inspecting;
     }
-    let yaw = closeCamera.yaw,
-      pitch = closeCamera.pitch,
-      zoom = closeCamera.zoom,
+    let yaw = roomCamera.yaw,
+      pitch = roomCamera.pitch,
+      zoom = roomCamera.zoom,
       paused = false,
       time = 0,
       previous = 0,
-      frame = 0,
-      sound = false,
-      audio: AudioContext | undefined;
-    let disposed = false,
-      contextLost = false,
+      frame = 0;
+    let contextLost = false,
       dragging = false,
       pointerId: number | undefined,
       pointerStart = new T.Vector2(),
@@ -1785,6 +2057,7 @@ const { render = true } = Astro.props;
     const landing = new T.Vector3();
     let carrying = false,
       falling = false,
+      characterDragged = false,
       fallTime = 0,
       fallGravity = 9.8,
       landingCompression = 0,
@@ -1840,20 +2113,6 @@ const { render = true } = Astro.props;
       get("[data-thumb]").style.transform = "";
     }
     const pausePanel = get("[data-pause]");
-    function tone(frequency: number, duration = 0.4, volume = 0.04, delay = 0) {
-      if (!sound || !audio) return;
-      const oscillator = audio.createOscillator(),
-        gain = audio.createGain();
-      oscillator.type = "triangle";
-      oscillator.frequency.value = frequency;
-      const now = audio.currentTime + delay;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(volume, now + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-      oscillator.connect(gain).connect(audio.destination);
-      oscillator.start(now);
-      oscillator.stop(now + duration + 0.02);
-    }
     function clearInput() {
       chairSlideAudio?.stop();
       sitRoute = undefined;
@@ -1901,77 +2160,7 @@ const { render = true } = Astro.props;
     get("[data-resume]").addEventListener("click", () => setPaused(false), {
       signal,
     });
-    function updateSoundButton() {
-      get("[data-sound]").setAttribute("aria-pressed", String(sound));
-      get("[data-sound]").setAttribute("aria-label", sound ? "Turn sound off" : "Turn sound on");
-      root.querySelector("[data-sound-off]")?.toggleAttribute("hidden", sound);
-      root.querySelector<SVGElement>("[data-sound-on]")!.style.display = sound ? "" : "none";
-    }
-    function pauseMusic() {
-      footsteps?.stop();
-      alexaReply?.stop();
-      shelfHoverAudio?.stop();
-      characterLiftAudio?.stop();
-      objectPressAudio?.stop();
-      shelfTransitionAudio?.stop();
-      typingAudio?.stop();
-      deskAudio?.stop();
-      chairSlideAudio?.stop();
-      music.pause();
-    }
-    function playMusic() {
-      if (audio) void resumeOfficeAudio(audio, music, () => sound && !disposed && !document.hidden);
-    }
-    // Restore interrupted Safari audio in a fresh user gesture as well as on return.
-    for (const event of ["pointerdown", "touchend", "keydown"] as const)
-      document.addEventListener(event, playMusic, {capture: true, passive: true, signal});
-    window.addEventListener("pageshow", playMusic, {signal});
-    window.addEventListener("focus", playMusic, {signal});
-    get("[data-sound]").addEventListener(
-      "click",
-      () => {
-        sound = !sound;
-        if (sound) {
-          if (!audio) {
-            useOfficePlaybackSession(signal);
-            audio = new AudioContext();
-            primeOfficeAudio(audio);
-            audio.addEventListener("statechange", () => {
-              if (audio?.state === "interrupted") playMusic();
-            }, {signal});
-          }
-          playMusic();
-          footsteps ??= createFootstepAudio(audio, signal);
-          void footsteps.load();
-          alexaReply ??= createAlexaReplyAudio(audio, signal);
-          void alexaReply.load();
-          shelfHoverAudio ??= createShelfHoverAudio(audio, signal);
-          void shelfHoverAudio.load();
-          characterLiftAudio ??= createCharacterLiftAudio(audio, signal);
-          void characterLiftAudio.load();
-          objectPressAudio ??= createObjectPressAudio(audio, signal);
-          void objectPressAudio.load();
-          shelfTransitionAudio ??= createShelfTransitionAudio(audio, signal);
-          void shelfTransitionAudio.load();
-          typingAudio ??= createTypingAudio(audio, signal);
-          void typingAudio.load();
-          deskAudio ??= createDeskAudio(audio, signal);
-          void deskAudio.load();
-          chairSlideAudio ??= createChairSlideAudio(audio, signal);
-          void chairSlideAudio.load();
-        } else {
-          pauseMusic();
-          void audio?.suspend();
-        }
-        updateSoundButton();
-        if (sound) {
-          tone(330, 0.6, 0.025);
-          tone(440, 0.8, 0.02, 0.12);
-        }
-        view.focus({ preventScroll: true });
-      },
-      { signal },
-    );
+    const movementGuide = get("[data-movement-guide]");
     window.addEventListener(
       "keydown",
       (e) => {
@@ -2005,6 +2194,10 @@ const { render = true } = Astro.props;
           ].includes(e.code)
         ) {
           e.preventDefault();
+          if (e.code.startsWith("Arrow")) {
+            movementGuide.dataset.used = "true";
+            movementGuide.setAttribute("aria-hidden", "true");
+          }
           sitRoute = undefined;
           if (!e.repeat && !keys.has(e.code) && !e.code.startsWith("Shift"))
             seating.requestExit();
@@ -2109,8 +2302,6 @@ const { render = true } = Astro.props;
         }
         echoPressed = pickEcho();
         if (echoPressed) return;
-        sitPressed = pickSeat();
-        if (sitPressed) return;
         character.updateMatrixWorld(true);
         // Skinned geometry changes each frame, so refresh its picking bounds.
         character.traverse((o) => {
@@ -2120,8 +2311,14 @@ const { render = true } = Astro.props;
           }
         });
         const hit = pickRay.intersectObject(character, true)[0];
-        if (hit && !seating.active) {
+        sceneHitReady = false;
+        const nearest = nearestSceneHit();
+        if (hit && (!nearest || hit.distance <= nearest.distance + 0.01)) {
+          seating.releaseForDrag();
+          sitRoute = undefined;
+          sitPressed = sitClicked = false;
           carrying = true;
+          characterDragged = false;
           if (sound) characterLiftAudio?.grab();
           falling = false;
           keys.clear();
@@ -2142,6 +2339,8 @@ const { render = true } = Astro.props;
             collar,
           );
           updateHeldTarget(e);
+        } else {
+          sitPressed = pickSeat();
         }
       },
       { signal },
@@ -2172,6 +2371,7 @@ const { render = true } = Astro.props;
         if (e.pointerId !== pointerId) return;
         if (deskPressed) return;
         if (carrying) {
+          if (Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y) > 6) characterDragged = true;
           updateHeldTarget(e);
           return;
         }
@@ -2179,7 +2379,7 @@ const { render = true } = Astro.props;
         if (p.distanceTo(pointerStart) > 6) dragging = true;
         if (dragging) {
           const nextYaw = yaw - (p.x - pointerLast.x) * 0.004;
-          yaw = wideView ? T.MathUtils.clamp(nextYaw, -0.22, 0.85) : nextYaw;
+          yaw = nextYaw;
           pitch = T.MathUtils.clamp(
             pitch + (p.y - pointerLast.y) * 0.003,
             0.05,
@@ -2206,6 +2406,7 @@ const { render = true } = Astro.props;
         echoClicked = echoPressed && !dragging && Math.hypot(e.clientX - pointerStart.x, e.clientY - pointerStart.y) <= 6;
         echoPressed = false;
         releaseDesk();
+        if (carrying && characterDragged) discoverEgg("character");
         releaseCharacter();
         pointerId = undefined;
         dragging = false;
@@ -2444,12 +2645,14 @@ const { render = true } = Astro.props;
       if (!paused && !reduced.matches) windowLandscape.update(time);
       if (!paused) {
         if (deskPressed) {
+          const previousHeight = desktop.position.y;
           desktop.position.y = T.MathUtils.clamp(
             desktop.position.y +
               deskPressed.userData.direction * deskSpeed * dt,
             deskMin,
             deskMax,
           );
+          if (desktop.position.y !== previousHeight) discoverEgg("desk");
         }
         deskAudio?.setPlaying(sound && !!deskPressed && (deskPressed.userData.direction > 0
           ? desktop.position.y < deskMax : desktop.position.y > deskMin));
