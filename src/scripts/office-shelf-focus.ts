@@ -92,16 +92,19 @@ export function createShelfFocusTargets(
     update(dt: number, reduced: boolean, visible: boolean) {
       for (const target of targets) {
         const goal = hovered === target && visible ? 1 : 0;
-        const amount = reduced
+        const previous = amounts.get(target)!;
+        let amount = reduced
           ? goal
           : T.MathUtils.lerp(
-              amounts.get(target)!,
+              previous,
               goal,
               1 - Math.exp(-dt * (goal ? 12 : 8)),
             );
-        amounts.set(target, amount);
+        if (Math.abs(amount - goal) < 0.0001) amount = goal;
         target.glow.visible = visible;
         const lift = reduced ? 0 : amount * 0.035;
+        if (amount === previous && target.glow.position.y === target.center.y + lift) continue;
+        amounts.set(target, amount);
         target.glow.position.copy(target.center);
         target.glow.position.y += lift;
         target.mesh.position.copy(target.glow.position);

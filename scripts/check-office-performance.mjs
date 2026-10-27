@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import * as T from 'three';
 import { batchRigidMeshes, accelerateOfficePicking } from '../src/scripts/office-render-optimization.ts';
+import { createShelfFocusTargets } from '../src/scripts/office-shelf-focus.ts';
 import { footProfileHull } from '../src/scripts/character-foot-profile.ts';
 import { loadTestChair, loadTestModel } from './load-test-model.mjs';
 
@@ -24,3 +25,32 @@ original.hits.forEach((distance,i)=>{if(distance===null)assert.equal(indexed.hit
 const {scene}=await loadTestModel('public/models/reference-character.glb');const surface=scene.getObjectByName('CharacterSurface');const pos=surface.geometry.attributes.position, ids=surface.geometry.attributes.skinIndex,weights=surface.geometry.attributes.skinWeight;
 for(const side of ['Left','Right']){const points=[];for(let i=0;i<pos.count;i++)if(weights.getX(i)>.999&&surface.skeleton.bones[ids.getX(i)].name===side+'Foot')points.push([pos.getY(i),pos.getZ(i)]);const hull=footProfileHull(points);for(let i=0;i<1000;i++){const angle=i*Math.PI*2/1000;const support=points=>Math.min(...points.map(([y,z])=>y*Math.cos(angle)-z*Math.sin(angle)));assert(Math.abs(support(points)-support(hull))<1e-10)}console.log(`PASS: ${side} sole support ${points.length} → ${hull.length} points, identical across 1,000 angles.`)}
 console.log(`PASS: lossless rigid batching; controls/transparency retained; 300 exact chair raycasts ${original.ms.toFixed(1)} ms → ${indexed.ms.toFixed(1)} ms.`);
+
+// Settled hover transforms must stop doing work while keeping picking aligned.
+const hoverScene = new T.Scene();
+const ornament = new T.Mesh(new T.BoxGeometry(), new T.MeshStandardMaterial());
+hoverScene.add(ornament);
+const hoverAbort = new AbortController();
+const hover = createShelfFocusTargets([ornament], hoverAbort.signal, hoverScene);
+const raycaster = new T.Raycaster(new T.Vector3(0, 0, 3), new T.Vector3(0, 0, -1));
+const target = hover.pick(raycaster, () => undefined);
+assert.ok(target);
+let transformUpdates = 0;
+const updateMatrix = target.mesh.updateMatrixWorld.bind(target.mesh);
+target.mesh.updateMatrixWorld = (...args) => { transformUpdates++; return updateMatrix(...args); };
+hover.setHovered(target);
+for (let frame = 0; frame < 120; frame++) hover.update(1 / 60, false, true);
+assert.equal(target.glow.position.y, target.center.y + .035);
+assert.equal(target.mesh.position.y, target.glow.position.y);
+const settledUpdates = transformUpdates;
+for (let frame = 0; frame < 120; frame++) hover.update(1 / 60, false, true);
+assert.equal(transformUpdates, settledUpdates);
+hover.update(1 / 60, true, true);
+assert.equal(target.glow.position.y, target.center.y, 'Reduced motion resets the lift');
+hover.setHovered(undefined);
+for (let frame = 0; frame < 120; frame++) hover.update(1 / 60, false, true);
+assert.equal(target.glow.position.y, target.center.y);
+hover.update(1 / 60, false, false);
+assert.equal(target.glow.visible, false);
+hoverAbort.abort();
+console.log('PASS: hover lifts and pick geometry stay aligned, settled transforms stop, reduced motion and wall cutaway retained.');

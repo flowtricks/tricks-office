@@ -1,7 +1,19 @@
-/** Keep ProMotion devices at a steady 60 fps instead of doing twice the work. */
+/** Phase-locked deadlines avoid dropping a 144 Hz screen to 48 fps. */
+function cadence(hz: number) {
+  const interval = 1000 / hz;
+  let next = -Infinity;
+  return (now: number) => {
+    if (now + 0.5 < next) return false;
+    if (!Number.isFinite(next)) next = now + interval;
+    else next += Math.max(1, Math.floor((now + 0.5 - next) / interval) + 1) * interval;
+    return true;
+  };
+}
+
+/** Bound rendering work on every display, including desktop ProMotion. */
 export function createOfficeFrameBudget(mobile: boolean) {
-  let lastRender = -Infinity;
-  let lastShadow = -Infinity;
+  const renderDue = cadence(60);
+  const shadowsDue = cadence(30);
   let elapsed = 0;
   let samples = 0;
   let stable = 0;
@@ -10,17 +22,9 @@ export function createOfficeFrameBudget(mobile: boolean) {
     get resolutionScale() {
       return scale;
     },
-    renderDue(now: number) {
-      if (mobile && now - lastRender < 1000 / 60 - 1) return false;
-      lastRender = now;
-      return true;
-    },
-    shadowsDue(now: number) {
-      // Reuse the existing soft shadows between updates; animation/input stays 60 Hz.
-      if (mobile && now - lastShadow < 1000 / 30 - 2) return false;
-      lastShadow = now;
-      return true;
-    },
+    renderDue,
+    // Retain full-resolution shadow maps, reusing them between 30 Hz updates.
+    shadowsDue,
     sample(milliseconds: number) {
       if (!mobile || milliseconds <= 0 || milliseconds > 100) {
         elapsed = samples = stable = 0;

@@ -1,0 +1,4 @@
+User-supplied Echo Dot model from Desktop/EchoDot.
+Geometry: 3D/Fbx/EchoDot.fbx
+Textures: Textures/Textures/Textures 1024x1024 (base color, roughness, metallic, emissive, OpenGL normal).
+Converted with scripts/prepare-echo-dot.py. Original geometry and UVs retained; normalized to the office footprint with its base at floor level.

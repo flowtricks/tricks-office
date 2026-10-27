@@ -1,56 +1,18 @@
 import * as T from "three";
 
-export function createEchoDot() {
+/** Keep the supplied model live so hover lifting and its light move together. */
+export function createEchoDot(model: T.Group) {
   const echo = new T.Group();
   echo.name = "Amazon Echo Dot";
-  const fabricCanvas = document.createElement("canvas");
-  fabricCanvas.width = fabricCanvas.height = 128;
-  const ctx = fabricCanvas.getContext("2d")!;
-  ctx.fillStyle = "#666666";
-  ctx.fillRect(0, 0, 128, 128);
-  for (let y = 0; y < 128; y += 4) for (let x = 0; x < 128; x += 4) {
-    ctx.fillStyle = (x + y) % 8 ? "#444444" : "#999999";
-    ctx.fillRect(x + (y % 8 ? 1 : 0), y, 2, 3);
-  }
-  const weave = new T.CanvasTexture(fabricCanvas);
-  weave.wrapS = weave.wrapT = T.RepeatWrapping;
-  weave.repeat.set(6, 1);
-  const fabric = new T.MeshStandardMaterial({ color: "#343940", roughness: .95, bumpMap: weave, bumpScale: .003 });
-  const plastic = new T.MeshStandardMaterial({ color: "#202329", roughness: .8 });
-  const body = new T.Mesh(new T.LatheGeometry([
-    new T.Vector2(0, .012), new T.Vector2(.19, .012), new T.Vector2(.222, .028),
-    new T.Vector2(.235, .06), new T.Vector2(.235, .135), new T.Vector2(.222, .17),
-    new T.Vector2(.19, .182), new T.Vector2(0, .182),
-  ], 64), fabric);
-  echo.add(body);
-  const top = new T.Mesh(new T.CylinderGeometry(.205, .214, .018, 64), plastic);
-  top.position.y = .179;
-  echo.add(top);
-  const ringMaterial = new T.MeshStandardMaterial({ color: "#008aff", emissive: "#008aff", emissiveIntensity: 3, roughness: .3 });
-  const ring = new T.Mesh(new T.TorusGeometry(.215, .006, 10, 96), ringMaterial);
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = .173;
-  echo.add(ring);
-  const cyan = new T.Mesh(new T.TorusGeometry(.215, .0065, 10, 32, Math.PI / 2), new T.MeshStandardMaterial({color: "#58edff", emissive: "#28cfff", emissiveIntensity: 3}));
-  cyan.rotation.set(Math.PI / 2, 0, -.8);
-  cyan.position.y = .173;
-  echo.add(cyan);
-  const icon = new T.MeshStandardMaterial({ color: "#8b929a", roughness: 1 });
-  for (const [x, z, plus] of [[-.085, 0, true], [.085, 0, false]] as const) {
-    const horizontal = new T.Mesh(new T.BoxGeometry(.038, .002, .006), icon);
-    horizontal.position.set(x, .19, z);
-    echo.add(horizontal);
-    if (plus) { const vertical = horizontal.clone(); vertical.rotation.y = Math.PI / 2; echo.add(vertical); }
-  }
-  for (const z of [-.075, .075]) {
-    const button = new T.Mesh(new T.CylinderGeometry(.014, .014, .003, 20), icon);
-    button.position.set(0, .19, z);
-    echo.add(button);
-  }
+  model.name = "User-supplied Echo Dot";
+  model.traverse(object => {
+    if (!(object instanceof T.Mesh)) return;
+    object.castShadow = object.receiveShadow = true;
+  });
+  echo.add(model);
   const blueLight = new T.PointLight("#168bff", .65, 1.25, 2);
   blueLight.position.y = .21;
   echo.add(blueLight);
-  echo.traverse(object => { if (object instanceof T.Mesh) object.castShadow = object.receiveShadow = true; });
   return echo;
 }
 

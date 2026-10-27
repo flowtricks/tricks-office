@@ -218,8 +218,12 @@ export function createTypingAudio(context: AudioContext, signal: AbortSignal) {
   return createClipAudio(context, signal, ["/audio/type-click.wav"], 0.45);
 }
 
-export function createDeskAudio(context: AudioContext, signal: AbortSignal) {
-  const clip = createClipAudio(context, signal, ["/audio/desk.wav"], 0.7);
+function createMotionAudio(
+  context: AudioContext,
+  signal: AbortSignal,
+  url: string,
+) {
+  const clip = createClipAudio(context, signal, [url], 0.7);
   let playing = false;
   const stop = () => {
     clip.stop();
@@ -236,4 +240,62 @@ export function createDeskAudio(context: AudioContext, signal: AbortSignal) {
       if (!playing) playing = clip.play(0, true);
     },
   };
+}
+
+export function createDeskAudio(context: AudioContext, signal: AbortSignal) {
+  return createMotionAudio(context, signal, "/audio/desk.wav");
+}
+
+export function createChairSlideAudio(
+  context: AudioContext,
+  signal: AbortSignal,
+) {
+  return createMotionAudio(context, signal, "/audio/chair-slide.wav");
+}
+
+/** Run both unlock calls synchronously inside the tap, before any fetch/await. */
+export async function resumeOfficeAudio(
+  context: AudioContext,
+  music: HTMLAudioElement,
+  canPlay: () => boolean,
+) {
+  if (!canPlay() || context.state === "closed") return;
+  const attempts: Promise<unknown>[] = [];
+  if (context.state !== "running") attempts.push(context.resume());
+  if (music.paused) attempts.push(music.play());
+  // A rejected autoplay attempt must not change the user's sound preference.
+  // Safari can require another real tap after returning from an interruption.
+  await Promise.allSettled(attempts);
+  if (!canPlay()) {
+    music.pause();
+    await context.suspend().catch(() => {});
+  }
+}
+
+/** Unlock the Web Audio output while the user gesture is still active. */
+export function primeOfficeAudio(context: AudioContext) {
+  const silent = context.createBufferSource();
+  silent.buffer = context.createBuffer(1, 1, context.sampleRate);
+  silent.connect(context.destination);
+  silent.onended = () => silent.disconnect();
+  silent.start();
+}
+
+export function useOfficePlaybackSession(signal: AbortSignal) {
+  const session = (navigator as Navigator & { audioSession?: { type: string } })
+    .audioSession;
+  if (!session) return;
+  const previous = session.type;
+  try {
+    session.type = "playback";
+  } catch {
+    return;
+  }
+  signal.addEventListener(
+    "abort",
+    () => {
+      if (session.type === "playback") session.type = previous;
+    },
+    { once: true },
+  );
 }

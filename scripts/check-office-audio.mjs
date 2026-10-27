@@ -7,6 +7,8 @@ import {
   createObjectPressAudio,
   createShelfTransitionAudio,
   createDeskAudio,
+  createChairSlideAudio,
+  resumeOfficeAudio,
 } from "../src/scripts/office-audio.ts";
 import { createShelfFocusTargets } from "../src/scripts/office-shelf-focus.ts";
 import * as T from "three";
@@ -121,6 +123,25 @@ try {
     stopped.includes(motor),
     "Release stops the desk motor immediately",
   );
+  const chair = createChairSlideAudio(context, abort.signal);
+  await chair.load();
+  for (let direction = 0; direction < 2; direction++) {
+    const beforeSlide = started.length;
+    chair.setPlaying(true);
+    chair.setPlaying(true);
+    assert.equal(
+      started.length,
+      beforeSlide + 1,
+      "Each chair slide starts one sound",
+    );
+    const slide = started.at(-1);
+    assert.equal(slide.loop, true);
+    chair.setPlaying(false);
+    assert.ok(
+      stopped.includes(slide),
+      "Chair stops sounding when movement ends",
+    );
+  }
   context.state = "suspended";
   const beforeSuspend = started.length;
   steps.play();
@@ -157,4 +178,65 @@ try {
 }
 console.log(
   "PASS: lazy shared loads, varied clips, immediate mute, cancelled reply, suspended/disposed silence, and one hover sound per entry.",
+);
+
+let enabled = true;
+const calls = [];
+let finishResume;
+const safariContext = {
+  state: "interrupted",
+  resume() {
+    calls.push("resume");
+    return new Promise((resolve) => {
+      finishResume = resolve;
+    });
+  },
+  suspend() {
+    calls.push("suspend");
+    return Promise.resolve();
+  },
+};
+const music = {
+  paused: true,
+  play() {
+    calls.push("play");
+    return Promise.reject(new Error("Needs a gesture"));
+  },
+  pause() {
+    calls.push("pause");
+  },
+};
+const pendingResume = resumeOfficeAudio(safariContext, music, () => enabled);
+assert.deepEqual(
+  calls,
+  ["resume", "play"],
+  "Music and effects unlock synchronously in the same gesture",
+);
+enabled = false;
+finishResume();
+await pendingResume;
+assert.deepEqual(
+  calls.slice(-2),
+  ["pause", "suspend"],
+  "Muting during unlock cannot restart audio later",
+);
+enabled = true;
+const recovery = resumeOfficeAudio(safariContext, music, () => enabled);
+finishResume();
+await recovery;
+assert.equal(
+  enabled,
+  true,
+  "Autoplay rejection preserves sound preference for the next tap",
+);
+const count = calls.length;
+enabled = false;
+await resumeOfficeAudio(safariContext, music, () => enabled);
+assert.equal(
+  calls.length,
+  count,
+  "Muted/background/disposed scenes cannot unlock audio",
+);
+console.log(
+  "PASS: chair slide loops and stops, gesture-backed Safari recovery, rejected autoplay, and mute races.",
 );
