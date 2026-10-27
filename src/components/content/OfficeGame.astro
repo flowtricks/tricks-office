@@ -23,6 +23,7 @@ const { render = true } = Astro.props;
         aria-label="Office. Use WASD or arrow keys to walk, Shift to run. Walk up to the desk to sit; press a direction again to stand up. Drag the character to pick him up and release to drop him. Drag the background to rotate the view."
         aria-describedby="office-controls"
       />
+      <audio data-music src="/audio/music.mp3" loop preload="none" aria-hidden="true" />
       <header class="office-game_header">
         <a class="office-game_brand" href="/" aria-label="T.Ricks home">
           <img
@@ -588,6 +589,7 @@ const { render = true } = Astro.props;
     const get = <E extends HTMLElement = HTMLElement>(selector: string) =>
       root.querySelector<E>(selector)!;
     const view = get("[data-view]");
+    const music = get<HTMLAudioElement>("[data-music]");
     const loading = get("[data-loading]");
     const loadingBar = get("[data-load-bar]");
     const loadingLabel = get("[data-load-label]");
@@ -1919,25 +1921,42 @@ const { render = true } = Astro.props;
     get("[data-resume]").addEventListener("click", () => setPaused(false), {
       signal,
     });
+    function updateSoundButton() {
+      get("[data-sound]").setAttribute("aria-pressed", String(sound));
+      get("[data-sound]").setAttribute("aria-label", sound ? "Turn sound off" : "Turn sound on");
+      root.querySelector("[data-sound-off]")?.toggleAttribute("hidden", sound);
+      root.querySelector<SVGElement>("[data-sound-on]")!.style.display = sound ? "" : "none";
+    }
+    let musicPlayRequest = 0;
+    function pauseMusic() {
+      musicPlayRequest++;
+      music.pause();
+    }
+    function playMusic() {
+      const request = ++musicPlayRequest;
+      // Start inside the click handler so iOS permits audible playback.
+      // Native streaming avoids decoding the entire track into Web Audio memory.
+      void music.play().catch(error => {
+        if (request !== musicPlayRequest || disposed || !sound || document.hidden) return;
+        sound = false;
+        void audio?.suspend();
+        updateSoundButton();
+        console.warn("Office music could not start", error);
+      });
+    }
     get("[data-sound]").addEventListener(
       "click",
       () => {
         sound = !sound;
         if (sound) {
+          playMusic();
           audio ??= new AudioContext();
           void audio.resume();
+        } else {
+          pauseMusic();
+          void audio?.suspend();
         }
-        get("[data-sound]").setAttribute("aria-pressed", String(sound));
-        get("[data-sound]").setAttribute(
-          "aria-label",
-          sound ? "Turn sound off" : "Turn sound on",
-        );
-        root
-          .querySelector("[data-sound-off]")
-          ?.toggleAttribute("hidden", sound);
-        root.querySelector<SVGElement>("[data-sound-on]")!.style.display = sound
-          ? ""
-          : "none";
+        updateSoundButton();
         if (sound) {
           tone(330, 0.6, 0.025);
           tone(440, 0.8, 0.02, 0.12);
@@ -1994,8 +2013,13 @@ const { render = true } = Astro.props;
       () => {
         clearInput();
         previous = 0;
-        if (document.hidden) audio?.suspend();
-        else if (sound) void audio?.resume();
+        if (document.hidden) {
+          pauseMusic();
+          void audio?.suspend();
+        } else if (sound) {
+          playMusic();
+          void audio?.resume();
+        }
       },
       { signal },
     );
@@ -2640,7 +2664,10 @@ const { render = true } = Astro.props;
       abort.abort();
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
-      audio?.close();
+      pauseMusic();
+      music.removeAttribute("src");
+      music.load();
+      void audio?.close();
       const geometries = new Set<T.BufferGeometry>(),
         materials = new Set<T.Material>(),
         textures = new Set<T.Texture>();
