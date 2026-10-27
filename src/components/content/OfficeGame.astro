@@ -2548,7 +2548,7 @@ const { render = true } = Astro.props;
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(view);
     resize();
-    const introDuration = 1.2;
+    const introDuration = 1.6;
     let introStarted = false, introElapsed = 0;
     const cameraFocus = new T.Vector3(),
       cameraOrbit = new T.Vector3(yaw, pitch, 0),
@@ -2616,9 +2616,9 @@ const { render = true } = Astro.props;
         cameraOrbit.lerp(targetOrbit, blend);
       }
       if (introStarted) introElapsed = Math.min(introDuration, introElapsed + dt);
-      const intro = reduced.matches ? 0 : 1 - T.MathUtils.smootherstep(introElapsed / introDuration, 0, 1);
-      const revealYaw = cameraOrbit.x - intro * 0.16;
-      const revealPitch = T.MathUtils.lerp(cameraOrbit.y, Math.PI / 2 - 0.01, intro);
+      const intro = reduced.matches ? 0 : Math.pow(1 - introElapsed / introDuration, 3);
+      const revealYaw = cameraOrbit.x + intro * 0.22;
+      const revealPitch = T.MathUtils.lerp(cameraOrbit.y, T.MathUtils.degToRad(72), intro);
       const revealDistance = cameraOrbit.z * (1 + intro * 0.06);
       camera.position.set(
         Math.sin(revealYaw) * Math.cos(revealPitch) * revealDistance + cameraFocus.x,
