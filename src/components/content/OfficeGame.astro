@@ -21,7 +21,6 @@ const { render = true } = Astro.props;
         tabindex="0"
         role="application"
         aria-label="Office. Use WASD or arrow keys to walk, Shift to run. Walk up to the desk to sit; press a direction again to stand up. Drag the character to pick him up and release to drop him. Drag the background to rotate the view."
-        aria-describedby="office-controls"
       />
       <audio data-music src="/audio/music.mp3" loop preload="none" aria-hidden="true" />
       <header class="office-game_header">
@@ -104,7 +103,7 @@ const { render = true } = Astro.props;
       </header>
       <div class="office-game_loading" data-loading role="status">
         <div class="office-game_loading-content">
-          <h2 class="office-game_loading-title">Welcome to my office.</h2>
+          <h2 class="office-game_loading-title"><span data-load-word>Welcome</span>{" "}<span data-load-word>to</span>{" "}<span data-load-word>my</span>{" "}<span data-load-word>office.</span></h2>
           <div class="office-game_loading-progress" role="progressbar" aria-label="Loading the office" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-load-progress><span data-load-bar /></div>
           <div class="office-game_loading-meta"><span data-load-label>Setting the scene…</span><span data-load-percent aria-hidden="true">0%</span></div>
         </div>
@@ -118,28 +117,6 @@ const { render = true } = Astro.props;
       <div class="office-game_touch" data-joystick aria-label="Drag to walk">
         <span data-thumb />
       </div>
-      <footer class="office-game_footer">
-        <div class="office-game_controls" id="office-controls">
-          <>
-            <span class="office-game_keys">
-              <>
-                <kbd>W</kbd>
-                <span>
-                  <>
-                    <kbd>A</kbd>
-                    <kbd>S</kbd>
-                    <kbd>D</kbd>
-                  </>
-                </span>
-              </>
-            </span>
-            <span>
-              Move around
-              <span class="office-game_secondary">Arrow keys also work</span>
-            </span>
-          </>
-        </div>
-      </footer>
       <span class="sr-only" data-desk-status role="status" />
       <div class="office-game_pause" data-pause hidden>
         <>
@@ -287,59 +264,6 @@ const { render = true } = Astro.props;
     .office-game_views[data-views="close"]::before {
       transform: translateX(100%);
     }
-    .office-game_footer {
-      position: absolute;
-      bottom: 0;
-      inset-inline: 0;
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      padding: 1.5rem;
-      gap: 1rem;
-      z-index: 3;
-      pointer-events: none;
-    }
-    .office-game_controls {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      padding: 0.75rem 1rem;
-      background: var(--office-panel);
-      border: 0;
-      border-radius: 1rem;
-      backdrop-filter: blur(1rem);
-      font-size: 0.65rem;
-      color: var(--office-ink);
-    }
-    .office-game_secondary {
-      display: block;
-      font-size: 0.55rem;
-      color: var(--office-muted);
-      margin-top: 0.2rem;
-    }
-    .office-game_keys {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.15rem;
-    }
-    .office-game_keys > span {
-      display: flex;
-      gap: 0.15rem;
-    }
-    .office-game_wrap kbd {
-      font-family: inherit;
-      display: inline-grid;
-      place-items: center;
-      border: 0;
-      border-radius: 0.3rem;
-      min-width: 1.15rem;
-      height: 1.15rem;
-      padding: 0 0.25rem;
-      font-size: 0.5rem;
-      color: #d4d4d4;
-      background: #2a2a2a;
-    }
     .office-game_speech {
       position: absolute;
       z-index: 4;
@@ -432,8 +356,9 @@ const { render = true } = Astro.props;
       box-shadow: 0 1.5rem 5rem #0005;
     }
     .office-game_loading-title { color: #fafafa; max-width: 12ch; font-size: clamp(1.9rem, 6vw, 2.55rem); font-weight: 500; letter-spacing: -.055em; line-height: 1.08; margin: 0 0 2.5rem; }
+    .office-game_loading-title span { display: inline-block; }
     .office-game_loading-progress { height: .3rem; background: #ffffff10; overflow: hidden; border-radius: 1rem; }
-    .office-game_loading-progress span { display: block; height: 100%; width: 100%; background: #eee; border-radius: inherit; transform: scaleX(0); transform-origin: left; transition: transform .45s ease; }
+    .office-game_loading-progress span { display: block; height: 100%; width: 100%; background: #eee; border-radius: inherit; transform: scaleX(0); transform-origin: left; transition: transform .08s linear; }
     .office-game_loading-meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: .8rem; color: #b6b6b6; font-size: .65rem; font-variant-numeric: tabular-nums; }
 
     @media (prefers-reduced-motion: reduce) {
@@ -495,12 +420,6 @@ const { render = true } = Astro.props;
         }
         .office-game_logo {
           width: 5rem;
-        }
-        .office-game_footer {
-          padding: 1rem;
-        }
-        .office-game_controls {
-          display: none;
         }
         .office-game_touch {
           display: grid;
@@ -615,12 +534,36 @@ const { render = true } = Astro.props;
     const loadingLabel = get("[data-load-label]");
     const loadingPercent = get("[data-load-percent]");
     const loadingProgress = get("[data-load-progress]");
-    function setLoadingProgress(value: number, label: string) {
-      loadingBar.style.transform = `scaleX(${value / 100})`;
-      loadingPercent.textContent = `${value}%`;
-      loadingProgress.setAttribute("aria-valuenow", String(value));
-      loadingLabel.textContent = label;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const abort = new AbortController();
+    const signal = abort.signal;
+    let loadingTarget = 0, loadingValue = 0, loadingFrame = 0, nextLoadingTick = 0;
+    let finishCount: () => void;
+    const countComplete = new Promise<void>(resolve => { finishCount = resolve; });
+    function updateLoadingCount(now: number) {
+      loadingFrame = 0;
+      if (signal.aborted || !loading.isConnected) return;
+      if (now >= nextLoadingTick) {
+        loadingValue = reduced.matches ? loadingTarget : Math.min(loadingTarget, loadingValue + 1);
+        loadingBar.style.transform = `scaleX(${loadingValue / 100})`;
+        loadingPercent.textContent = `${loadingValue}%`;
+        loadingProgress.setAttribute("aria-valuenow", String(loadingValue));
+        // Slow gently as the displayed count catches the latest real milestone.
+        nextLoadingTick = now + 12 + 12 * Math.max(0, 1 - (loadingTarget - loadingValue) / 12);
+      }
+      if (loadingValue < loadingTarget) loadingFrame = requestAnimationFrame(updateLoadingCount);
+      else if (loadingValue === 100) finishCount();
     }
+    function setLoadingProgress(value: number, label: string) {
+      loadingTarget = Math.max(loadingTarget, value);
+      loadingLabel.textContent = label;
+      if (!loadingFrame) loadingFrame = requestAnimationFrame(updateLoadingCount);
+    }
+    signal.addEventListener("abort", () => {
+      cancelAnimationFrame(loadingFrame);
+      loading.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+      finishCount();
+    }, { once: true });
     let loadedAssets = 0;
     const trackAsset = async <Value,>(asset: Promise<Value>) => {
       const value = await asset;
@@ -650,10 +593,7 @@ const { render = true } = Astro.props;
     ]);
     setLoadingProgress(90, "Turning on the lights…");
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-    const abort = new AbortController();
-    const signal = abort.signal;
     const compact = matchMedia("(max-width: 48rem)").matches;
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const appleTouch = isAppleTouchDevice(navigator.userAgent, navigator.maxTouchPoints);
     const frameBudget = createOfficeFrameBudget(appleTouch);
     let renderer: T.WebGLRenderer;
@@ -2347,7 +2287,7 @@ const { render = true } = Astro.props;
         e.preventDefault();
         contextLost = true;
         clearInput();
-        loading.getAnimations().forEach(animation => animation.cancel());
+        loading.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
         loadingLabel.textContent = "Reconnecting to your office…";
         loading.hidden = false;
       },
@@ -2368,6 +2308,8 @@ const { render = true } = Astro.props;
       composer.renderTarget2.dispose();
       resize();
       contextLost = false;
+      introStarted = true;
+      introElapsed = 2.4;
       previous = performance.now();
       renderer.shadowMap.needsUpdate = true;
       composer.render();
@@ -2405,6 +2347,7 @@ const { render = true } = Astro.props;
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(view);
     resize();
+    let introStarted = false, introElapsed = 0;
     const cameraFocus = new T.Vector3(),
       cameraOrbit = new T.Vector3(yaw, pitch, 0),
       targetOrbit = new T.Vector3();
@@ -2470,12 +2413,15 @@ const { render = true } = Astro.props;
           );
         cameraOrbit.lerp(targetOrbit, blend);
       }
+      if (introStarted) introElapsed = Math.min(2.4, introElapsed + dt);
+      const intro = reduced.matches ? 0 : 1 - T.MathUtils.smootherstep(introElapsed / 2.4, 0, 1);
+      const revealYaw = cameraOrbit.x - intro * 0.16;
+      const revealPitch = cameraOrbit.y + intro * 0.025;
+      const revealDistance = cameraOrbit.z * (1 + intro * 0.06);
       camera.position.set(
-        Math.sin(cameraOrbit.x) * Math.cos(cameraOrbit.y) * cameraOrbit.z +
-          cameraFocus.x,
-        Math.sin(cameraOrbit.y) * cameraOrbit.z + cameraFocus.y,
-        Math.cos(cameraOrbit.x) * Math.cos(cameraOrbit.y) * cameraOrbit.z +
-          cameraFocus.z,
+        Math.sin(revealYaw) * Math.cos(revealPitch) * revealDistance + cameraFocus.x,
+        Math.sin(revealPitch) * revealDistance + cameraFocus.y,
+        Math.cos(revealYaw) * Math.cos(revealPitch) * revealDistance + cameraFocus.z,
       );
       camera.lookAt(cameraFocus);
     }
@@ -2829,8 +2775,32 @@ const { render = true } = Astro.props;
       }
     }
     setLoadingProgress(100, "Welcome in.");
-    frame = requestAnimationFrame(animate);
-    const reveal = loading.animate([{ opacity: 1 }, { opacity: 0 }], { duration: reduced.matches ? 0 : 400, easing: "ease-out" });
-    void reveal.finished.then(() => { loading.hidden = true; }).catch(() => {});
+    await countComplete;
+    if (disposed || contextLost) return;
+    const exitDuration = reduced.matches ? 0 : 360;
+    const words = [...loading.querySelectorAll<HTMLElement>("[data-load-word]")];
+    const textExits = [...words, loadingLabel, loadingPercent, loadingProgress].map((element, index) =>
+      element.animate([
+        { opacity: 1, transform: "translateY(0)" },
+        { opacity: 0, transform: reduced.matches ? "none" : "translateY(-.65rem)" },
+      ], { duration: exitDuration, delay: reduced.matches ? 0 : 180 + Math.min(index, 4) * 35, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }),
+    );
+    try {
+      await Promise.all(textExits.map(animation => animation.finished));
+      if (disposed || contextLost) return;
+      introStarted = true;
+      previous = performance.now();
+      frame = requestAnimationFrame(animate);
+      const card = get(".office-game_loading-content").animate([
+        { opacity: 1, transform: "scale(1) translateY(0)" },
+        { opacity: 0, transform: reduced.matches ? "none" : "scale(.96) translateY(-.5rem)" },
+      ], { duration: reduced.matches ? 120 : 460, easing: "cubic-bezier(.22,1,.36,1)", fill: "forwards" });
+      const reveal = loading.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: reduced.matches ? 120 : 750, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards",
+      });
+      await Promise.all([card.finished, reveal.finished]);
+      loading.hidden = true;
+      loading.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+    } catch { /* Navigation or context recovery cancelled the reveal. */ }
   }
 </script>
