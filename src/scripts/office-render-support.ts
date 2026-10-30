@@ -1,5 +1,42 @@
 import * as T from "three";
 
+export async function warmOfficeRenderer(
+  renderer: T.WebGLRenderer,
+  scene: T.Scene,
+  camera: T.Camera,
+  target: T.WebGLRenderTarget,
+  staggerUploads: boolean,
+  cancelled: () => boolean,
+  nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve())),
+) {
+  if (cancelled()) return false;
+  if (staggerUploads) {
+    const textures = new Set<T.Texture>();
+    scene.traverse(object => {
+      if (!(object instanceof T.Mesh)) return;
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        for (const value of Object.values(material)) if (value instanceof T.Texture) textures.add(value);
+      }
+    });
+    for (const texture of textures) {
+      if (cancelled()) return false;
+      renderer.initTexture(texture);
+      await nextFrame();
+    }
+  }
+  if (cancelled()) return false;
+  const previousTarget = renderer.getRenderTarget();
+  let compilation: Promise<T.Object3D>;
+  try {
+    renderer.setRenderTarget(target);
+    compilation = renderer.compileAsync(scene, camera);
+  } finally {
+    renderer.setRenderTarget(previousTarget);
+  }
+  await compilation;
+  return !cancelled();
+}
+
 /** iPadOS can advertise itself as a Mac. All iOS browsers use WebKit. */
 export function isAppleTouchDevice(userAgent: string, maxTouchPoints: number) {
   return (
@@ -17,8 +54,8 @@ export function officePixelRatio(
   // Bound offscreen allocations on Retina iPhones/iPads without changing framing.
   return Math.min(
     dpr,
-    appleTouch ? 1.75 : 2,
-    appleTouch ? Math.sqrt(1_500_000 / Math.max(1, width * height)) : 2,
+    appleTouch ? 1.5 : 2,
+    appleTouch ? Math.sqrt(1_000_000 / Math.max(1, width * height)) : 2,
   );
 }
 

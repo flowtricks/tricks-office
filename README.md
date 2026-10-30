@@ -28,6 +28,11 @@ The `scripts/check-*.mjs` scripts verify character motion and scene behavior.
 Model preparation scripts require their original source assets and, in some
 cases, Blender; those local source files are not required to run the site.
 
+After changing `reference-character.glb`, run `node scripts/build-mobile-character.mjs`
+to regenerate the iOS version with 1024-pixel textures. Verify it with
+`node scripts/check-mobile-character.mjs`. In development, `/?render-profile=ios`
+exercises the iOS rendering budget on desktop; it does not emulate iPhone hardware.
+
 ## Credits and licensing
 
 Built on [Lumos for Astro](https://lumosframework.com).

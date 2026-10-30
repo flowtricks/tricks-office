@@ -1,9 +1,31 @@
 import assert from 'node:assert/strict';
 import * as T from 'three';
-import { batchRigidMeshes, accelerateOfficePicking } from '../src/scripts/office-render-optimization.ts';
+import { batchRigidMeshes, accelerateOfficePicking, retainCutawayLights } from '../src/scripts/office-render-optimization.ts';
 import { createShelfFocusTargets } from '../src/scripts/office-shelf-focus.ts';
 import { footProfileHull } from '../src/scripts/character-foot-profile.ts';
 import { loadTestChair, loadTestModel } from './load-test-model.mjs';
+
+const cutawayScene = new T.Scene();
+const wall = new T.Group();
+wall.position.set(-4, 0, -1.3);
+wall.rotation.y = Math.PI / 2;
+const shelf = new T.Group();
+shelf.position.set(0, 2, .2);
+const lamp = new T.PointLight('#ffac48', 1.8, .55);
+shelf.add(lamp);
+wall.add(shelf);
+cutawayScene.add(wall);
+const lampPosition = lamp.getWorldPosition(new T.Vector3());
+retainCutawayLights(wall, cutawayScene);
+for (const visible of [true, false, true, false]) {
+  wall.visible = visible;
+  const lights = [];
+  cutawayScene.traverseVisible(object => { if (object.isLight) lights.push(object); });
+  assert.deepEqual(lights, [lamp], 'Wall cutaways must not change shader light counts');
+  assert.ok(lamp.getWorldPosition(new T.Vector3()).distanceTo(lampPosition) < 1e-10);
+  assert.equal(lamp.intensity, 1.8);
+}
+console.log('PASS: wall cutaways retain lights and their world positions without shader variants.');
 
 const root = new T.Group(); root.position.set(2, 1, -3); root.rotation.y = .6;
 const material = new T.MeshStandardMaterial();

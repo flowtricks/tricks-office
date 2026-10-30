@@ -2,6 +2,12 @@ import * as T from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { MeshBVH, acceleratedRaycast } from "three-mesh-bvh";
 
+export function retainCutawayLights(source: T.Object3D, scene: T.Scene) {
+  const lights: T.Light[] = [];
+  source.traverse(object => { if (object instanceof T.Light) lights.push(object); });
+  for (const light of lights) scene.attach(light);
+}
+
 /** Merge rigid, opaque parts without changing triangles, materials, or moving controls. */
 export function batchRigidMeshes(root: T.Object3D, excluded = new Set<T.Object3D>()) {
   root.updateWorldMatrix(true, true);

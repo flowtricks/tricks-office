@@ -4,6 +4,7 @@ import {
   isAppleTouchDevice,
   officePixelRatio,
   officeRenderSupport,
+  warmOfficeRenderer,
 } from "../src/scripts/office-render-support.ts";
 
 assert.equal(
@@ -28,7 +29,8 @@ for (const [width, height] of [
   [1366, 1024],
 ]) {
   const ratio = officePixelRatio(width, height, 3, true);
-  assert.ok(width * height * ratio ** 2 <= 2_000_000.01);
+  assert.ok(width * height * ratio ** 2 <= 1_000_000.01);
+  assert.ok(ratio <= 1.5);
 }
 assert.equal(officePixelRatio(1440, 900, 2, false), 2);
 assert.ok(Number.isFinite(officePixelRatio(0, 0, 3, true)));
@@ -82,3 +84,33 @@ assert.equal(
 console.log(
   "Render compatibility checks passed: iPhone/iPad detection, Retina memory budget, format-specific MSAA, framebuffer fallback.",
 );
+
+const scene = new T.Scene();
+const sharedTexture = new T.Texture();
+scene.add(new T.Mesh(new T.BoxGeometry(), new T.MeshStandardMaterial({ map: sharedTexture, roughnessMap: sharedTexture })));
+const target = new T.WebGLRenderTarget();
+const priorTarget = new T.WebGLRenderTarget();
+const camera = new T.PerspectiveCamera();
+let currentTarget = priorTarget, uploads = 0, yields = 0, compilations = 0, cancelled = false;
+const warmupRenderer = {
+  getRenderTarget: () => currentTarget,
+  setRenderTarget: value => { currentTarget = value; },
+  initTexture: texture => { assert.equal(texture, sharedTexture); uploads++; },
+  compileAsync: async () => { assert.equal(currentTarget, target); compilations++; return scene; },
+};
+const nextFrame = async () => { yields++; };
+assert.equal(await warmOfficeRenderer(warmupRenderer, scene, camera, target, true, () => cancelled, nextFrame), true);
+assert.equal(uploads, 1, 'Shared textures upload once');
+assert.equal(yields, 1, 'Mobile uploads yield before compilation');
+assert.equal(currentTarget, priorTarget, 'Warmup restores the render target');
+cancelled = true;
+assert.equal(await warmOfficeRenderer(warmupRenderer, scene, camera, target, true, () => cancelled, nextFrame), false);
+assert.equal(compilations, 1, 'Lost/disposed contexts do not start compilation');
+cancelled = false;
+assert.equal(await warmOfficeRenderer(warmupRenderer, scene, camera, target, true, () => cancelled, async () => { cancelled = true; }), false);
+assert.equal(compilations, 1, 'Context loss during an upload stops warmup');
+cancelled = false;
+warmupRenderer.compileAsync = async () => { cancelled = true; return scene; };
+assert.equal(await warmOfficeRenderer(warmupRenderer, scene, camera, target, false, () => cancelled), false);
+assert.equal(currentTarget, priorTarget, 'Context loss during compilation preserves target restoration');
+console.log('PASS: staged mobile uploads, compositor shader warmup, and context-loss cancellation.');
